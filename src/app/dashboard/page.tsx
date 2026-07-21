@@ -1,91 +1,155 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
+import { CheckCircle2, Lock, PlayCircle } from "lucide-react";
 import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 
 export default async function DashboardPage() {
-  // middleware.ts sudah memastikan halaman ini hanya bisa diakses kalau
-  // sudah login, jadi session di sini seharusnya selalu ada. Tetap dicek
-  // untuk jaga-jaga (misal token kedaluwarsa tepat saat request masuk).
   const session = await getServerSession(authOptions);
+  if (!session?.user) redirect("/login");
 
-  if (!session?.user) {
-    return (
-      <div className="mx-auto max-w-md px-6 py-16 text-center">
-        <p>Sesi tidak ditemukan. Silakan login ulang.</p>
-        <Link href="/login" className={buttonVariants({ className: "mt-4" })}>
-          Ke halaman login
-        </Link>
-      </div>
-    );
-  }
+  const courses = await prisma.course.findMany({
+    where: { status: "PUBLISHED" },
+    orderBy: { order: "asc" },
+    include: { modules: { orderBy: { order: "asc" } } },
+  });
 
-  const { name, email, image, role } = session.user;
+  // Progress dicek sekaligus untuk semua modul di semua course, supaya
+  // tidak query berulang per modul (N+1).
+  const moduleIds = courses.flatMap((c) => c.modules.map((m) => m.id));
+  const progress = moduleIds.length
+    ? await prisma.progress.findMany({
+        where: { userId: session.user.id, moduleId: { in: moduleIds } },
+      })
+    : [];
+  const progressByModuleId = new Map(progress.map((p) => [p.moduleId, p]));
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-6 py-16">
+    <div className="mx-auto w-full max-w-4xl px-6 py-12">
       <div className="mb-8 flex items-center justify-between">
-        <h1 className="text-xl font-medium">Dashboard</h1>
-        <SignOutButton />
-      </div>
-
-      {/* Kartu ini sengaja dibuat cukup detail — halaman ini dipakai untuk
-          memverifikasi alur login = daftar otomatis end-to-end, jadi semua
-          data penting dari session ditampilkan apa adanya. */}
-      <div className="rounded-xl border p-6">
-        <p className="mb-4 text-sm text-muted-foreground">
-          Kalau kamu melihat data di bawah ini, artinya: login lewat OAuth
-          berhasil, baris User otomatis dibuat/ditemukan di database lewat
-          PrismaAdapter, dan role tersimpan benar di token session.
-        </p>
-
-        <div className="flex items-center gap-4">
-          {image ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={image}
-              alt={name ?? "Avatar"}
-              className="h-14 w-14 rounded-full"
-            />
-          ) : (
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted text-lg font-medium">
-              {(name ?? email ?? "?").charAt(0).toUpperCase()}
-            </div>
-          )}
-          <div>
-            <p className="font-medium">{name ?? "(tanpa nama)"}</p>
-            <p className="text-sm text-muted-foreground">{email}</p>
-          </div>
-          <Badge variant={role === "ADMIN" ? "default" : "secondary"} className="ml-auto">
-            {role}
-          </Badge>
+        <div>
+          <h1 className="text-xl font-medium">Dashboard</h1>
+          <p className="text-sm text-muted-foreground">
+            Halo, {session.user.name}
+          </p>
         </div>
-
-        {role === "ADMIN" ? (
-          <div className="mt-6 rounded-lg bg-muted p-4">
-            <p className="text-sm">
-              Role kamu <strong>ADMIN</strong> — berarti middleware role-gate
-              juga sudah berfungsi.
-            </p>
-            <Link href="/admin" className={buttonVariants({ size: "sm", className: "mt-3" })}>
-              Buka panel admin
+        <div className="flex items-center gap-2">
+          {session.user.role === "ADMIN" && (
+            <Link
+              href="/admin"
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
+              Panel admin
             </Link>
-          </div>
-        ) : (
-          <div className="mt-6 rounded-lg bg-muted p-4">
-            <p className="text-sm">
-              Role kamu masih <strong>STUDENT</strong>. Kalau harusnya jadi
-              admin, cek apakah email di atas sudah terdaftar di{" "}
-              <code className="rounded bg-background px-1 py-0.5">
-                ADMIN_EMAILS
-              </code>{" "}
-              pada environment variable, lalu login ulang.
-            </p>
-          </div>
-        )}
+          )}
+          <SignOutButton />
+        </div>
       </div>
+
+      {courses.length === 0 && (
+        <p className="text-sm text-muted-foreground">
+          Belum ada kursus yang dipublish. Jalankan{" "}
+          <code className="rounded bg-muted px-1 py-0.5">
+            npm run seed-course
+          </code>{" "}
+          dulu.
+        </p>
+      )}
+
+      {courses.map((course) => {
+        const completedCount = course.modules.filter(
+          (m) => progressByModuleId.get(m.id)?.completed,
+        ).length;
+
+        return (
+          <section key={course.id} className="mb-10">
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <h2 className="font-medium">{course.title}</h2>
+                <p className="text-xs text-muted-foreground">
+                  {completedCount}/{course.modules.length} modul selesai
+                </p>
+              </div>
+              <Badge
+                variant={
+                  course.accessLevel === "FREE" ? "secondary" : "outline"
+                }
+              >
+                {course.accessLevel === "FREE" ? "Gratis" : "Pro"}
+              </Badge>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              {course.modules.map((mod) => {
+                // Belum ada sistem subscription (ditunda), jadi modul PRO
+                // untuk sekarang selalu dikunci di UI — begitu Fase 6
+                // (Monetisasi) dikerjakan, ganti kondisi ini dengan cek
+                // subscription aktif milik user.
+                const isLocked = mod.accessLevel === "PRO";
+                const isDone =
+                  progressByModuleId.get(mod.id)?.completed ?? false;
+
+                const rowClass = `flex items-center gap-3 rounded-lg border p-3 text-sm ${
+                  isLocked ? "opacity-60" : "hover:bg-muted"
+                }`;
+
+                const content = (
+                  <>
+                    {isDone ? (
+                      <CheckCircle2
+                        className="h-4 w-4 shrink-0 text-green-600"
+                        aria-hidden="true"
+                      />
+                    ) : isLocked ? (
+                      <Lock
+                        className="h-4 w-4 shrink-0 text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <PlayCircle
+                        className="h-4 w-4 shrink-0 text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                    )}
+                    <span className="flex-1">
+                      {mod.order}. {mod.title}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {isLocked
+                        ? "Perlu Pro"
+                        : isDone
+                          ? "Selesai"
+                          : "Lanjutkan"}
+                    </span>
+                  </>
+                );
+
+                if (isLocked) {
+                  return (
+                    <div key={mod.id} className={rowClass}>
+                      {content}
+                    </div>
+                  );
+                }
+
+                return (
+                  <Link
+                    key={mod.id}
+                    href={`/learn/${course.slug}/${mod.slug}`}
+                    className={rowClass}
+                  >
+                    {content}
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
     </div>
   );
 }
