@@ -67,14 +67,15 @@ OAuth client ID → Web application):
 3. Di bagian **Environment Variables**, isi semua variabel dari
    `.env.example`:
 
-   | Key                                         | Value                              |
-   | ------------------------------------------- | ---------------------------------- |
-   | `DATABASE_URL`                              | pooled connection string dari Neon |
-   | `DIRECT_URL`                                | direct connection string dari Neon |
-   | `NEXTAUTH_URL`                              | `https://domain-kamu.vercel.app`   |
-   | `NEXTAUTH_SECRET`                           | hasil `openssl rand -base64 32`    |
-   | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | dari Google Cloud Console          |
-   | `GITHUB_ID` / `GITHUB_SECRET`               | dari GitHub OAuth App              |
+   | Key                                         | Value                                                                                           |
+   | ------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+   | `DATABASE_URL`                              | pooled connection string dari Neon                                                              |
+   | `DIRECT_URL`                                | direct connection string dari Neon                                                              |
+   | `NEXTAUTH_URL`                              | `https://domain-kamu.vercel.app`                                                                |
+   | `NEXTAUTH_SECRET`                           | hasil `openssl rand -base64 32`                                                                 |
+   | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | dari Google Cloud Console                                                                       |
+   | `GITHUB_ID` / `GITHUB_SECRET`               | dari GitHub OAuth App                                                                           |
+   | `ADMIN_EMAILS`                              | email kamu (dan admin lain kalau ada), pisahkan koma — otomatis dijadikan role ADMIN saat login |
 
 4. Klik **Deploy**.
 
@@ -84,7 +85,27 @@ OAuth client ID → Web application):
   Cloud Console dan GitHub OAuth App sesuai domain final.
 - Update `NEXTAUTH_URL` di Environment Variables Vercel kalau domainnya
   beda dari yang dipakai saat setup awal, lalu **Redeploy**.
-- Test login di `https://domain-kamu.vercel.app/login`.
+
+## 7. Verifikasi alur login = daftar otomatis (end-to-end)
+
+Buka `https://domain-kamu.vercel.app/login` dan cek satu-satu:
+
+1. Klik **"Lanjutkan dengan Google"** → approve di consent screen → harus
+   ke-redirect ke `/dashboard` dan menampilkan nama, email, foto, serta
+   badge role kamu.
+2. Cek di Neon SQL Editor: `SELECT * FROM "User";` — harus ada baris baru
+   dengan email yang sama.
+3. Ulangi untuk **"Lanjutkan dengan GitHub"** (bisa pakai akun/email
+   berbeda).
+4. Buka `/dashboard` dalam mode incognito (belum login) → harus
+   ter-redirect ke `/login`.
+5. Kalau email kamu sudah didaftarkan di `ADMIN_EMAILS`, badge role di
+   `/dashboard` harus menunjukkan **ADMIN**, dan tombol "Buka panel admin"
+   akan membawa ke `/admin` tanpa ke-redirect balik.
+6. Coba akses `/admin` pakai akun lain yang rolenya masih `STUDENT` →
+   harus ter-redirect ke `/dashboard`, bukan masuk ke `/admin`.
+
+Kalau keenam poin di atas lolos, alur autentikasi end-to-end sudah selesai.
 
 ## Setiap kali skema Prisma berubah
 
