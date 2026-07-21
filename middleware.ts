@@ -5,7 +5,7 @@ import type { NextRequest } from "next/server";
 const PROTECTED_PREFIXES = [
   "/dashboard",
   "/my-courses",
-  "/course",
+  "/learn", // halaman lesson + playground, beda dari /course (detail publik)
   "/certificates",
   "/leaderboard",
   "/settings",
@@ -45,7 +45,7 @@ export const config = {
   matcher: [
     "/dashboard/:path*",
     "/my-courses/:path*",
-    "/course/:path*",
+    "/learn/:path*",
     "/certificates/:path*",
     "/leaderboard/:path*",
     "/settings/:path*",

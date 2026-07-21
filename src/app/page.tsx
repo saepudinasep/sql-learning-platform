@@ -1,5 +1,12 @@
 import Link from "next/link";
-import { ArrowRight, Award, Check, Route, Terminal } from "lucide-react";
+import {
+  ArrowRight,
+  Award,
+  Check,
+  Route,
+  Terminal,
+  ChevronDown,
+} from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -57,6 +64,25 @@ const LEARNING_PATH = [
   },
 ];
 
+const FAQS = [
+  {
+    q: "Apakah saya perlu install database untuk belajar di sini?",
+    a: "Tidak. Semua latihan SQL berjalan langsung di browser kamu lewat sql.js (WebAssembly), tidak perlu install PostgreSQL, MySQL, atau aplikasi apa pun.",
+  },
+  {
+    q: "Apakah semua modul gratis?",
+    a: "Ya, untuk saat ini seluruh 12 modul SQL dasar bisa diakses gratis tanpa batas waktu. Paket berbayar dengan modul lanjutan akan menyusul.",
+  },
+  {
+    q: "Apakah saya dapat sertifikat setelah selesai?",
+    a: "Ya, setelah menyelesaikan seluruh modul di satu jalur belajar, sertifikat penyelesaian akan otomatis tersedia di halaman profil kamu.",
+  },
+  {
+    q: "Dataset apa yang dipakai untuk latihan?",
+    a: "Dataset contoh seperti tabel pelanggan, karyawan, dan produk — cukup realistis untuk latihan, tapi tetap ringan supaya cepat dimuat di browser.",
+  },
+];
+
 export default function LandingPage() {
   return (
     <div className="flex flex-1 flex-col">
@@ -74,9 +100,9 @@ export default function LandingPage() {
             <Link href="/course/sql-dasar" className="hover:text-foreground">
               Kursus
             </Link>
-            {/* <Link href="/pricing" className="hover:text-foreground">
-              Harga
-            </Link> */}
+            <a href="#faq" className="hover:text-foreground">
+              FAQ
+            </a>
           </nav>
           <div className="flex items-center gap-2">
             <Link
@@ -115,12 +141,6 @@ export default function LandingPage() {
                 Mulai gratis
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
-              {/* <Link
-                href="/pricing"
-                className={buttonVariants({ size: "lg", variant: "outline" })}
-              >
-                Lihat paket
-              </Link> */}
             </div>
             <p className="mt-4 text-xs text-muted-foreground">
               12 modul dasar gratis selamanya. Tidak perlu kartu kredit.
@@ -168,7 +188,7 @@ export default function LandingPage() {
                 <span className="ml-4" style={{ color: "var(--accent-amber)" }}>
                   WHERE
                 </span>{" "}
-                kota = `Bandung`
+                kota = &apos;Bandung&apos;
                 <span
                   className="animate-cursor-blink ml-0.5 inline-block h-4 w-1.5 translate-y-0.5"
                   style={{ background: "var(--accent-amber)" }}
@@ -272,7 +292,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ===== CTA pricing ===== */}
+      {/* ===== CTA ===== */}
       <section className="border-b">
         <div className="mx-auto w-full max-w-6xl px-6 py-16">
           <div
@@ -283,19 +303,12 @@ export default function LandingPage() {
             }}
           >
             <div>
-              <p className="font-medium">
-                Mulai dari gratis
-                {/* , upgrade kapan saja */}
-              </p>
+              <p className="font-medium">Mulai dari gratis</p>
               <ul className="mt-2 space-y-1 text-sm opacity-90">
                 <li className="flex items-center gap-1.5">
                   <Check className="h-3.5 w-3.5" aria-hidden="true" />
                   12 modul dasar tanpa batas waktu
                 </li>
-                {/* <li className="flex items-center gap-1.5">
-                  <Check className="h-3.5 w-3.5" aria-hidden="true" />
-                  Batalkan langganan Pro kapan saja
-                </li> */}
               </ul>
             </div>
             <Link
@@ -313,6 +326,51 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ===== Tentang ===== */}
+      <section className="border-b">
+        <div className="mx-auto w-full max-w-6xl px-6 py-16">
+          <p className="font-mono text-xs tracking-wide text-muted-foreground">
+            {"-- tentang"}
+          </p>
+          <h2 className="mt-2 max-w-xl text-2xl font-medium tracking-tight">
+            Dibuat untuk yang mau langsung praktik, bukan cuma nonton
+          </h2>
+          <p className="mt-4 max-w-xl text-muted-foreground">
+            belajar_sql dibangun karena kebanyakan materi SQL di internet
+            berhenti di teori. Di sini kamu menulis query sungguhan sejak modul
+            pertama, dapat feedback instan, dan bisa lihat progresmu sendiri
+            dari waktu ke waktu.
+          </p>
+        </div>
+      </section>
+
+      {/* ===== FAQ ===== */}
+      <section id="faq" className="border-b">
+        <div className="mx-auto w-full max-w-6xl px-6 py-16">
+          <p className="font-mono text-xs tracking-wide text-muted-foreground">
+            {"-- faq"}
+          </p>
+          <h2 className="mt-2 text-2xl font-medium tracking-tight">
+            Pertanyaan yang sering ditanyakan
+          </h2>
+
+          <div className="mt-8 max-w-2xl divide-y">
+            {FAQS.map((item) => (
+              <details key={item.q} className="group py-4">
+                <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-medium">
+                  {item.q}
+                  <ChevronDown
+                    className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
+                    aria-hidden="true"
+                  />
+                </summary>
+                <p className="mt-2 text-sm text-muted-foreground">{item.a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ===== Footer ===== */}
       <footer className="mt-auto">
         <div className="mx-auto flex w-full max-w-6xl flex-col items-start justify-between gap-4 px-6 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center">
@@ -321,9 +379,9 @@ export default function LandingPage() {
             <Link href="/help" className="hover:text-foreground">
               Bantuan
             </Link>
-            {/* <Link href="/pricing" className="hover:text-foreground">
-              Harga
-            </Link> */}
+            <a href="#faq" className="hover:text-foreground">
+              FAQ
+            </a>
           </div>
         </div>
       </footer>
