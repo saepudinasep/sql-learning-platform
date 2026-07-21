@@ -1,65 +1,332 @@
-import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight, Award, Check, Route, Terminal } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
-export default function Home() {
+const RESULT_ROWS = [
+  { nama: "Sari", kota: "Bandung" },
+  { nama: "Yoga", kota: "Bandung" },
+  { nama: "Dewi", kota: "Bandung" },
+];
+
+const FEATURES = [
+  {
+    icon: Terminal,
+    title: "Langsung praktik",
+    description:
+      "Editor dan hasil query ada di satu layar yang sama. Tidak ada slide, tidak ada video — kamu menulis SQL sejak menit pertama.",
+  },
+  {
+    icon: Route,
+    title: "Jalur yang runtut",
+    description:
+      "Modul disusun bertahap dari SELECT sampai subquery, bukan kumpulan latihan acak yang melompat-lompat tingkat kesulitannya.",
+  },
+  {
+    icon: Award,
+    title: "Bukti untuk portofolio",
+    description:
+      "Selesaikan satu jalur belajar penuh dan dapatkan sertifikat yang bisa dilampirkan ke CV atau profil LinkedIn.",
+  },
+];
+
+const LEARNING_PATH = [
+  {
+    step: "01",
+    title: "Dasar SELECT & WHERE",
+    detail: "Membaca tabel, memfilter baris, mengurutkan hasil.",
+    access: "Gratis",
+  },
+  {
+    step: "02",
+    title: "Relasi & JOIN",
+    detail: "Menggabungkan data dari beberapa tabel sekaligus.",
+    access: "Gratis",
+  },
+  {
+    step: "03",
+    title: "Agregasi & GROUP BY",
+    detail: "Meringkas ribuan baris jadi satu angka yang berarti.",
+    access: "Gratis",
+  },
+  {
+    step: "04",
+    title: "Studi kasus nyata",
+    detail: "Dataset penjualan dan pengguna sungguhan, bukan contoh mainan.",
+    access: "Gratis",
+  },
+];
+
+export default function LandingPage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="flex flex-1 flex-col">
+      {/* ===== Nav ===== */}
+      <header className="border-b">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
+          <Link
+            href="/"
+            className="flex items-center gap-2 font-mono text-sm font-medium"
+          >
+            <Terminal className="h-4 w-4" aria-hidden="true" />
+            belajar_sql
+          </Link>
+          <nav className="hidden items-center gap-6 text-sm text-muted-foreground sm:flex">
+            <Link href="/course/sql-dasar" className="hover:text-foreground">
+              Kursus
+            </Link>
+            {/* <Link href="/pricing" className="hover:text-foreground">
+              Harga
+            </Link> */}
+          </nav>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/login"
+              className={buttonVariants({ variant: "ghost", size: "sm" })}
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              Masuk
+            </Link>
+            <Link href="/login" className={buttonVariants({ size: "sm" })}>
+              Mulai gratis
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {/* ===== Hero ===== */}
+      <section className="border-b">
+        <div className="mx-auto grid w-full max-w-6xl items-center gap-12 px-6 py-20 md:grid-cols-2 md:py-28">
+          <div>
+            <p className="mb-4 font-mono text-xs tracking-wide text-muted-foreground">
+              {"-- belajar_sql.mulai()"}
+            </p>
+            <h1 className="font-mono text-3xl font-medium leading-tight tracking-tight sm:text-4xl">
+              Tulis query.
+              <br />
+              Lihat hasilnya.
+              <br />
+              Seketika.
+            </h1>
+            <p className="mt-5 max-w-md text-muted-foreground">
+              Belajar SQL langsung di browser, dari SELECT pertamamu sampai JOIN
+              dan subquery. Tanpa instalasi database, tanpa video berjam-jam.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link href="/login" className={buttonVariants({ size: "lg" })}>
+                Mulai gratis
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+              {/* <Link
+                href="/pricing"
+                className={buttonVariants({ size: "lg", variant: "outline" })}
+              >
+                Lihat paket
+              </Link> */}
+            </div>
+            <p className="mt-4 text-xs text-muted-foreground">
+              12 modul dasar gratis selamanya. Tidak perlu kartu kredit.
+            </p>
+          </div>
+
+          {/* Signature element: kartu terminal dengan query yang "sedang
+              diketik" lalu hasilnya muncul baris demi baris. */}
+          <div
+            className="overflow-hidden rounded-xl border shadow-sm"
+            style={{
+              background: "var(--terminal-ink)",
+              borderColor: "var(--terminal-border)",
+              color: "var(--terminal-ink-foreground)",
+            }}
+          >
+            <div
+              className="flex items-center gap-1.5 border-b px-4 py-3"
+              style={{ borderColor: "var(--terminal-border)" }}
             >
-              Learning
-            </a>{" "}
-            center.
+              <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
+              <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
+              <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
+              <span className="ml-2 font-mono text-xs text-white/40">
+                modul_3.sql
+              </span>
+            </div>
+            <div className="p-5 font-mono text-sm leading-relaxed">
+              <p>
+                <span className="text-white/40">1</span>
+                <span className="ml-4" style={{ color: "var(--accent-amber)" }}>
+                  SELECT
+                </span>{" "}
+                nama, kota
+              </p>
+              <p>
+                <span className="text-white/40">2</span>
+                <span className="ml-4" style={{ color: "var(--accent-amber)" }}>
+                  FROM
+                </span>{" "}
+                pelanggan
+              </p>
+              <p>
+                <span className="text-white/40">3</span>
+                <span className="ml-4" style={{ color: "var(--accent-amber)" }}>
+                  WHERE
+                </span>{" "}
+                kota = `Bandung`
+                <span
+                  className="animate-cursor-blink ml-0.5 inline-block h-4 w-1.5 translate-y-0.5"
+                  style={{ background: "var(--accent-amber)" }}
+                  aria-hidden="true"
+                />
+              </p>
+
+              <div
+                className="mt-4 overflow-hidden rounded-md border"
+                style={{ borderColor: "var(--terminal-border)" }}
+              >
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr
+                      className="border-b"
+                      style={{ borderColor: "var(--terminal-border)" }}
+                    >
+                      <th className="px-3 py-2 text-left font-normal text-white/50">
+                        nama
+                      </th>
+                      <th className="px-3 py-2 text-left font-normal text-white/50">
+                        kota
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {RESULT_ROWS.map((row, i) => (
+                      <tr
+                        key={row.nama}
+                        className="animate-in fade-in slide-in-from-bottom-1 border-b last:border-0"
+                        style={{
+                          borderColor: "var(--terminal-border)",
+                          animationDelay: `${400 + i * 150}ms`,
+                          animationDuration: "500ms",
+                          animationFillMode: "backwards",
+                        }}
+                      >
+                        <td className="px-3 py-2">{row.nama}</td>
+                        <td className="px-3 py-2">{row.kota}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p
+                className="mt-3 text-xs"
+                style={{ color: "var(--success-teal)" }}
+              >
+                3 baris dikembalikan
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== Fitur ===== */}
+      <section className="border-b">
+        <div className="mx-auto grid w-full max-w-6xl gap-8 px-6 py-16 sm:grid-cols-3">
+          {FEATURES.map((feature) => (
+            <div key={feature.title}>
+              <feature.icon className="h-5 w-5" aria-hidden="true" />
+              <p className="mt-3 font-medium">{feature.title}</p>
+              <p className="mt-1.5 text-sm text-muted-foreground">
+                {feature.description}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ===== Jalur belajar ===== */}
+      <section className="border-b">
+        <div className="mx-auto w-full max-w-6xl px-6 py-16">
+          <p className="font-mono text-xs tracking-wide text-muted-foreground">
+            {"-- jalur_belajar"}
           </p>
+          <h2 className="mt-2 text-2xl font-medium tracking-tight">
+            Empat tahap, satu arah yang jelas
+          </h2>
+
+          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {LEARNING_PATH.map((item) => (
+              <div key={item.step} className="border-t pt-4">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-sm text-muted-foreground">
+                    {item.step}
+                  </span>
+                  <Badge
+                    variant={item.access === "Gratis" ? "secondary" : "outline"}
+                  >
+                    {item.access}
+                  </Badge>
+                </div>
+                <p className="mt-3 font-medium">{item.title}</p>
+                <p className="mt-1.5 text-sm text-muted-foreground">
+                  {item.detail}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      </section>
+
+      {/* ===== CTA pricing ===== */}
+      <section className="border-b">
+        <div className="mx-auto w-full max-w-6xl px-6 py-16">
+          <div
+            className="flex flex-col items-start gap-4 rounded-xl p-8 sm:flex-row sm:items-center sm:justify-between"
+            style={{
+              background: "var(--accent-amber)",
+              color: "var(--accent-amber-foreground)",
+            }}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            <div>
+              <p className="font-medium">
+                Mulai dari gratis
+                {/* , upgrade kapan saja */}
+              </p>
+              <ul className="mt-2 space-y-1 text-sm opacity-90">
+                <li className="flex items-center gap-1.5">
+                  <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                  12 modul dasar tanpa batas waktu
+                </li>
+                {/* <li className="flex items-center gap-1.5">
+                  <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                  Batalkan langganan Pro kapan saja
+                </li> */}
+              </ul>
+            </div>
+            <Link
+              href="/login"
+              className={buttonVariants({
+                size: "lg",
+                variant: "secondary",
+                className: "shrink-0",
+              })}
+            >
+              Daftar sekarang
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </div>
         </div>
-      </main>
+      </section>
+
+      {/* ===== Footer ===== */}
+      <footer className="mt-auto">
+        <div className="mx-auto flex w-full max-w-6xl flex-col items-start justify-between gap-4 px-6 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center">
+          <span className="font-mono">belajar_sql</span>
+          <div className="flex gap-5">
+            <Link href="/help" className="hover:text-foreground">
+              Bantuan
+            </Link>
+            {/* <Link href="/pricing" className="hover:text-foreground">
+              Harga
+            </Link> */}
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -81,6 +81,16 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Token khusus landing page: kartu "terminal" dan aksen amber tunggal.
+     Tidak dipakai di komponen UI umum lain, sengaja dipisah dari token
+     shadcn di atas supaya tidak mempengaruhi tampilan dashboard/admin. */
+  --terminal-ink: oklch(0.22 0.03 262);
+  --terminal-ink-foreground: oklch(0.96 0.01 90);
+  --terminal-border: oklch(1 0 0 / 10%);
+  --accent-amber: oklch(0.78 0.15 70);
+  --accent-amber-foreground: oklch(0.2 0.05 70);
+  --success-teal: oklch(0.72 0.14 165);
 }
 
 .dark {
@@ -127,4 +137,21 @@
   html {
     @apply font-sans;
   }
+}
+
+/* Dipakai di hero landing page: kursor berkedip di ujung query yang "sedang
+   diketik" dalam kartu terminal. */
+@keyframes cursor-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.animate-cursor-blink {
+  animation: cursor-blink 1s steps(1) infinite;
 }
