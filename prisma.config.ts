@@ -8,7 +8,12 @@ export default defineConfig({
   migrations: {
     path: "prisma/migrations",
   },
+  // Dipakai HANYA oleh `prisma migrate` / `prisma studio` dari CLI, bukan
+  // oleh aplikasi saat runtime (runtime pakai driver adapter di
+  // src/lib/prisma.ts). Boleh isi dengan connection string pooled Neon,
+  // tapi kalau migrate gagal karena timeout/prepared statement, ganti
+  // sementara ke DIRECT_URL (non-pooled) di .env.local saat migrate saja.
   datasource: {
-    url: process.env["DATABASE_URL"],
+    url: process.env.DATABASE_URL,
   },
 });

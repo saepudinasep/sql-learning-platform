@@ -1,7 +1,12 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// Skema Prisma untuk SQL Learning Platform
+// Database: Neon (PostgreSQL) — lihat DEPLOY.md untuk cara ambil connection string
+// PENTING (Prisma 7): connection URL TIDAK ditulis di sini lagi. URL untuk
+// `prisma migrate` diatur di prisma.config.ts, dan PrismaClient di runtime
+// butuh driver adapter eksplisit — lihat src/lib/prisma.ts.
+// Auth: NextAuth.js dengan Google & GitHub OAuth, disimpan lewat
+//       @next-auth/prisma-adapter (model Account/Session/VerificationToken
+//       di bawah mengikuti skema yang WAJIB dipakai adapter tersebut, jangan diubah
+//       nama field-nya).
 
 generator client {
   provider = "prisma-client"
@@ -10,4 +15,249 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// ============ ENUMS ============
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+enum AccessLevel {
+  FREE
+  PRO
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELED
+  PENDING
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  AWAITING_REVIEW
+}
+
+enum PaymentMethod {
+  QRIS
+  VIRTUAL_ACCOUNT
+  CREDIT_CARD
+  MANUAL_TRANSFER
+}
+
+// ============ AUTH (wajib untuk @next-auth/prisma-adapter) ============
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          Role      @default(STUDENT)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+
+  subscriptions    Subscription[]
+  payments         Payment[]
+  progress         Progress[]
+  certificates     Certificate[]
+  streakLogs       StreakLog[]
+  supportTickets   SupportTicket[]
+  reviewedPayments Payment[]       @relation("PaymentReviewer")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ============ COURSE & MODULE ============
+
+model Course {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  title       String
+  description String
+  accessLevel AccessLevel   @default(FREE)
+  status      ContentStatus @default(DRAFT)
+  order       Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  modules      Module[]
+  certificates Certificate[]
+}
+
+model Module {
+  id          String        @id @default(cuid())
+  courseId    String
+  slug        String
+  title       String
+  content     String
+  order       Int
+  accessLevel AccessLevel   @default(FREE)
+  status      ContentStatus @default(DRAFT)
+  datasetUrl  String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  course    Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  questions Question[]
+  progress  Progress[]
+
+  @@unique([courseId, slug])
+}
+
+model Question {
+  id               String  @id @default(cuid())
+  moduleId         String
+  instruction      String
+  referenceQuery   String
+  matchRowOrder    Boolean @default(true)
+  matchColumnNames Boolean @default(true)
+  order            Int     @default(0)
+
+  module Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+}
+
+// ============ PROGRESS & GAMIFIKASI ============
+
+model Progress {
+  id          String    @id @default(cuid())
+  userId      String
+  moduleId    String
+  completed   Boolean   @default(false)
+  attempts    Int       @default(0)
+  completedAt DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, moduleId])
+}
+
+model StreakLog {
+  id     String   @id @default(cuid())
+  userId String
+  date   DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+}
+
+model Certificate {
+  id       String   @id @default(cuid())
+  userId   String
+  courseId String
+  issuedAt DateTime @default(now())
+  pdfUrl   String?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+}
+
+// ============ MONETISASI ============
+
+model Plan {
+  id       String @id @default(cuid())
+  name     String
+  price    Int
+  interval String
+  features Json
+
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id         String             @id @default(cuid())
+  userId     String
+  planId     String
+  status     SubscriptionStatus @default(PENDING)
+  startedAt  DateTime           @default(now())
+  expiresAt  DateTime?
+  autoRenew  Boolean            @default(true)
+  canceledAt DateTime?
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan     Plan      @relation(fields: [planId], references: [id])
+  payments Payment[]
+}
+
+model Payment {
+  id             String        @id @default(cuid())
+  userId         String
+  subscriptionId String?
+  amount         Int
+  method         PaymentMethod
+  status         PaymentStatus @default(PENDING)
+  providerRefId  String?
+  proofUrl       String?
+  createdAt      DateTime      @default(now())
+  reviewedById   String?
+  reviewedAt     DateTime?
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+  reviewedBy   User?         @relation("PaymentReviewer", fields: [reviewedById], references: [id])
+}
+
+// ============ SUPPORT ============
+
+model SupportTicket {
+  id        String   @id @default(cuid())
+  userId    String?
+  email     String
+  message   String
+  status    String   @default("open")
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
 }

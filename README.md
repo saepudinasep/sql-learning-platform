@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SQL Learning Platform
 
-## Getting Started
+Platform belajar SQL interaktif langsung di browser (pakai sql.js/WebAssembly),
+dengan sistem kursus gratis & berbayar.
 
-First, run the development server:
+## Stack
+
+- **Next.js 16** (App Router) + TypeScript
+- **Prisma 7** + **Neon** (PostgreSQL) — database aplikasi (user, course, progress, payment)
+- **NextAuth.js** — login lewat Google & GitHub (tidak ada form email/password)
+- **sql.js** — jalankan query SQL beneran di browser, sepenuhnya di sisi client
+- **shadcn/ui** + Tailwind — komponen UI
+
+## Setup lokal
 
 ```bash
+cp .env.example .env.local
+# isi .env.local: DATABASE_URL & DIRECT_URL dari Neon, NEXTAUTH_SECRET,
+# GOOGLE_CLIENT_ID/SECRET, GITHUB_ID/SECRET
+
+npm install
+npx prisma migrate dev --name init
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Buka <http://localhost:3000>.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Struktur penting
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+prisma/schema.prisma       → skema database (auth, course, module, payment, dst)
+src/lib/auth.ts             → konfigurasi NextAuth (provider Google & GitHub)
+src/lib/prisma.ts           → Prisma client singleton
+src/app/api/auth/[...nextauth]/route.ts → handler NextAuth
+src/app/login/page.tsx      → halaman login (tombol Google/GitHub saja)
+middleware.ts                → proteksi route yang butuh login & route admin
+```
 
-## Learn More
+## Deploy
 
-To learn more about Next.js, take a look at the following resources:
+Lihat [DEPLOY.md](./DEPLOY.md) untuk panduan lengkap deploy ke **Neon +
+Vercel**, termasuk cara setup OAuth app di Google & GitHub.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Cara kerja auth (penting dibaca sebelum edit)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Login pertama kali = daftar otomatis. Tidak ada tabel/alur "register"
+terpisah — begitu user klik "Lanjutkan dengan Google/GitHub" dan approve,
+`PrismaAdapter` otomatis membuat baris di tabel `User` dari email yang
+didapat dari provider tersebut.
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Session disimpan sebagai **JWT** (bukan session di database) supaya
+`middleware.ts` bisa membaca status login & role di Edge Runtime tanpa
+query Prisma (Edge Runtime tidak bisa connect Postgres langsung).
