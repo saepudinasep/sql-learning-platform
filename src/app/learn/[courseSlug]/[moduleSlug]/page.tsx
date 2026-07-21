@@ -54,7 +54,7 @@ export default async function LessonPage({
 
         {question && (
           <div className="mt-4 rounded-lg bg-muted p-4 text-sm">
-            <p className="mb-1 font-medium">Tugas</p>
+            <p className="mb-1 font-medium">Cerita</p>
             <p>{question.instruction}</p>
           </div>
         )}
@@ -74,7 +74,9 @@ export default async function LessonPage({
           nextModuleHref={nextModuleHref}
         />
       ) : (
-        <p className="text-sm text-muted-foreground">Belum ada soal untuk modul ini.</p>
+        <p className="text-sm text-muted-foreground">
+          Belum ada soal untuk modul ini.
+        </p>
       )}
     </div>
   );

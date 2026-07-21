@@ -7,12 +7,13 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { markModuleComplete } from "./actions";
 
 type QueryResult = { columns: string[]; values: unknown[][] } | null;
+type TableSchema = { table: string; columns: { name: string; type: string }[] };
 
 function resultsMatch(
   userRes: QueryResult,
   refRes: QueryResult,
   matchRowOrder: boolean,
-  matchColumnNames: boolean
+  matchColumnNames: boolean,
 ) {
   const u = userRes ?? { columns: [], values: [] };
   const r = refRes ?? { columns: [], values: [] };
@@ -31,11 +32,69 @@ function resultsMatch(
 
   const stringify = (row: unknown[]) => JSON.stringify(row);
   if (matchRowOrder) {
-    return u.values.every((row, i) => stringify(row) === stringify(r.values[i]));
+    return u.values.every(
+      (row, i) => stringify(row) === stringify(r.values[i]),
+    );
   }
   const uSorted = u.values.map(stringify).sort();
   const rSorted = r.values.map(stringify).sort();
   return uSorted.every((v, i) => v === rSorted[i]);
+}
+
+// Baca daftar tabel + kolomnya langsung dari database yang sudah dimuat,
+// supaya skema yang ditampilkan selalu sesuai dataset sesungguhnya (tidak
+// perlu ditulis manual dan bisa basi kalau dataset berubah).
+function readSchema(db: Database): TableSchema[] {
+  const tablesRes = db.exec(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';",
+  );
+  const tableNames = tablesRes[0]?.values.map((row) => String(row[0])) ?? [];
+
+  return tableNames.map((table) => {
+    const infoRes = db.exec(`PRAGMA table_info(${table});`);
+    const columns =
+      infoRes[0]?.values.map((row) => ({
+        name: String(row[1]),
+        type: String(row[2]),
+      })) ?? [];
+    return { table, columns };
+  });
+}
+
+function ResultTable({ result }: { result: NonNullable<QueryResult> }) {
+  if (result.columns.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Query berhasil, tidak ada kolom hasil.
+      </p>
+    );
+  }
+  return (
+    <div className="overflow-x-auto rounded-lg border">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b bg-muted">
+            {result.columns.map((c) => (
+              <th key={c} className="px-3 py-2 text-left font-medium">
+                {c}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {result.values.map((row, i) => (
+            <tr key={i} className="border-b last:border-0">
+              {row.map((v, j) => (
+                <td key={j} className="px-3 py-2">
+                  {String(v)}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 export function SqlPlayground({
@@ -56,10 +115,17 @@ export function SqlPlayground({
   const dbRef = useRef<Database | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [query, setQuery] = useState("SELECT * FROM sqlite_master WHERE type='table';");
+  const [schema, setSchema] = useState<TableSchema[]>([]);
+  const [expectedResult, setExpectedResult] = useState<QueryResult>(null);
+
+  const [query, setQuery] = useState(
+    "SELECT * FROM sqlite_master WHERE type='table';",
+  );
   const [result, setResult] = useState<QueryResult>(null);
   const [runError, setRunError] = useState<string | null>(null);
-  const [status, setStatus] = useState<"idle" | "checking" | "correct" | "incorrect">("idle");
+  const [status, setStatus] = useState<
+    "idle" | "checking" | "correct" | "incorrect"
+  >("idle");
 
   useEffect(() => {
     let cancelled = false;
@@ -69,10 +135,28 @@ export function SqlPlayground({
         const res = await fetch(datasetUrl);
         if (!res.ok) throw new Error(`Gagal memuat dataset (${res.status})`);
         const buf = await res.arrayBuffer();
-        if (!cancelled) {
-          dbRef.current = new SQL.Database(new Uint8Array(buf));
-          setLoading(false);
+        if (cancelled) return;
+
+        const db = new SQL.Database(new Uint8Array(buf));
+        dbRef.current = db;
+        setSchema(readSchema(db));
+
+        // Jalankan referenceQuery sekali di awal, cuma untuk ditampilkan
+        // sebagai preview "hasil yang diharapkan" — bukan query yang
+        // dijalankan atas nama user, dan teks query-nya sendiri tidak
+        // pernah dikirim ke UI, cuma hasilnya.
+        try {
+          const expected = db.exec(referenceQuery)[0] ?? {
+            columns: [],
+            values: [],
+          };
+          setExpectedResult(expected);
+        } catch {
+          // kalau referenceQuery di data seed keliru, jangan sampai
+          // gagalkan seluruh playground — cukup skip preview-nya.
         }
+
+        setLoading(false);
       } catch (e) {
         if (!cancelled) {
           setLoadError(e instanceof Error ? e.message : "Gagal memuat sql.js");
@@ -85,7 +169,7 @@ export function SqlPlayground({
       cancelled = true;
       dbRef.current?.close();
     };
-  }, [datasetUrl]);
+  }, [datasetUrl, referenceQuery]);
 
   function runQuery() {
     if (!dbRef.current) return;
@@ -104,11 +188,22 @@ export function SqlPlayground({
     if (!dbRef.current) return;
     try {
       setRunError(null);
-      const userRes = dbRef.current.exec(query)[0] ?? { columns: [], values: [] };
-      const refRes = dbRef.current.exec(referenceQuery)[0] ?? { columns: [], values: [] };
+      const userRes = dbRef.current.exec(query)[0] ?? {
+        columns: [],
+        values: [],
+      };
+      const refRes = dbRef.current.exec(referenceQuery)[0] ?? {
+        columns: [],
+        values: [],
+      };
       setResult(userRes);
 
-      const isCorrect = resultsMatch(userRes, refRes, matchRowOrder, matchColumnNames);
+      const isCorrect = resultsMatch(
+        userRes,
+        refRes,
+        matchRowOrder,
+        matchColumnNames,
+      );
 
       if (isCorrect) {
         setStatus("checking");
@@ -133,6 +228,33 @@ export function SqlPlayground({
 
   return (
     <div>
+      {/* Skema tabel — dibaca langsung dari dataset, bukan ditulis manual */}
+      {schema.length > 0 && (
+        <div className="mb-4 rounded-lg border p-3">
+          <p className="mb-2 text-xs font-medium text-muted-foreground">
+            Tabel yang tersedia
+          </p>
+          {schema.map((t) => (
+            <div key={t.table} className="mb-2 last:mb-0">
+              <p className="font-mono text-sm font-medium">{t.table}</p>
+              <p className="font-mono text-xs text-muted-foreground">
+                {t.columns.map((c) => `${c.name} (${c.type})`).join(", ")}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Preview hasil yang diharapkan */}
+      {expectedResult && expectedResult.values.length > 0 && (
+        <div className="mb-4">
+          <p className="mb-2 text-xs font-medium text-muted-foreground">
+            Contoh bentuk hasil yang diharapkan
+          </p>
+          <ResultTable result={expectedResult} />
+        </div>
+      )}
+
       <div className="overflow-hidden rounded-lg border">
         <div className="border-b bg-muted px-3 py-1.5 text-xs text-muted-foreground">
           editor.sql
@@ -157,30 +279,12 @@ export function SqlPlayground({
 
       {runError && <p className="mt-3 text-sm text-destructive">{runError}</p>}
 
-      {result && result.columns.length > 0 && (
-        <div className="mt-4 overflow-x-auto rounded-lg border">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted">
-                {result.columns.map((c) => (
-                  <th key={c} className="px-3 py-2 text-left font-medium">
-                    {c}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {result.values.map((row, i) => (
-                <tr key={i} className="border-b last:border-0">
-                  {row.map((v, j) => (
-                    <td key={j} className="px-3 py-2">
-                      {String(v)}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {result && (
+        <div className="mt-4">
+          <p className="mb-2 text-xs font-medium text-muted-foreground">
+            Hasil query kamu
+          </p>
+          <ResultTable result={result} />
         </div>
       )}
 
@@ -188,11 +292,16 @@ export function SqlPlayground({
         <div className="mt-4 rounded-lg bg-green-50 p-4 text-sm text-green-700">
           <p className="font-medium">Benar! Progres kamu tersimpan.</p>
           {nextModuleHref ? (
-            <Link href={nextModuleHref} className={buttonVariants({ size: "sm", className: "mt-3" })}>
+            <Link
+              href={nextModuleHref}
+              className={buttonVariants({ size: "sm", className: "mt-3" })}
+            >
               Lanjut ke modul berikutnya
             </Link>
           ) : (
-            <p className="mt-1">Ini modul terakhir yang tersedia untuk sekarang.</p>
+            <p className="mt-1">
+              Ini modul terakhir yang tersedia untuk sekarang.
+            </p>
           )}
         </div>
       )}

@@ -75,7 +75,7 @@ const questions = [
   [
     "q_1",
     "mod_1",
-    "Tampilkan nama semua siswa yang ada di kelas 6A.",
+    "Kamu baru ditugaskan jadi wali kelas 6A dan diminta menyiapkan daftar hadir untuk hari pertama sekolah. Dari tabel siswa, tampilkan nama semua siswa yang ada di kelas 6A.",
     "SELECT nama FROM siswa WHERE kelas = '6A';",
     false,
     true,
@@ -83,7 +83,7 @@ const questions = [
   [
     "q_2",
     "mod_2",
-    "Tampilkan semua produk dengan harga di atas 50000.",
+    "Kamu kerja paruh waktu di toko alat tulis, dan pemilik toko mau memajang barang-barang 'kelas premium' di etalase depan. Dari tabel produk, tampilkan semua produk dengan harga di atas 50000.",
     "SELECT * FROM produk WHERE harga > 50000;",
     false,
     true,
@@ -91,7 +91,7 @@ const questions = [
   [
     "q_3",
     "mod_3",
-    "Tampilkan 2 karyawan dengan gaji tertinggi, urut dari yang tertinggi.",
+    "Tim HR mau memberi bonus tahunan untuk 2 karyawan dengan gaji tertinggi di perusahaan. Dari tabel karyawan, tampilkan nama dan gaji 2 karyawan dengan gaji tertinggi, diurutkan dari yang tertinggi ke terendah.",
     "SELECT nama, gaji FROM karyawan ORDER BY gaji DESC LIMIT 2;",
     true,
     true,
@@ -109,7 +109,9 @@ for (const [
   await sql`
     INSERT INTO "Question" (id, "moduleId", instruction, "referenceQuery", "matchRowOrder", "matchColumnNames", "order")
     VALUES (${id}, ${moduleId}, ${instruction}, ${referenceQuery}, ${matchRowOrder}, ${matchColumnNames}, 1)
-    ON CONFLICT (id) DO UPDATE SET "referenceQuery" = EXCLUDED."referenceQuery"
+    ON CONFLICT (id) DO UPDATE SET
+      instruction = EXCLUDED.instruction,
+      "referenceQuery" = EXCLUDED."referenceQuery"
   `;
 }
 
