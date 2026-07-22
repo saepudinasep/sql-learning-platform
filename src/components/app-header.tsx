@@ -34,6 +34,9 @@ export function AppHeader({
             <Link href="/certificates" className="hover:text-foreground">
               Sertifikat
             </Link>
+            <Link href="/leaderboard" className="hover:text-foreground">
+              Leaderboard
+            </Link>
           </nav>
         </div>
         <UserMenu name={name} email={email} image={image} role={role} />
