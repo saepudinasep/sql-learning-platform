@@ -3,6 +3,7 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logStreakToday } from "@/lib/streak";
 
 export async function markModuleComplete(moduleId: string) {
   const session = await getServerSession(authOptions);
@@ -27,6 +28,8 @@ export async function markModuleComplete(moduleId: string) {
       attempts: 1,
     },
   });
+
+  await logStreakToday(session.user.id);
 
   return { ok: true };
 }

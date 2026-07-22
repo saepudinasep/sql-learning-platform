@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
-import { Trophy } from "lucide-react";
+import { Flame, Trophy } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getCurrentStreak } from "@/lib/streak";
 import { AppHeader } from "@/components/app-header";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -35,9 +36,24 @@ export default async function LeaderboardPage() {
 
   const leaderboard = rankings
     .map((r) => ({ user: userById.get(r.userId), count: r._count.moduleId }))
-    .filter((row): row is { user: NonNullable<typeof row.user>; count: number } => !!row.user);
+    .filter(
+      (row): row is { user: NonNullable<typeof row.user>; count: number } =>
+        !!row.user,
+    );
 
-  const myRank = leaderboard.findIndex((row) => row.user.id === session.user.id);
+  // Streak dihitung paralel untuk semua user yang tampil di papan peringkat
+  // (bukan query terpisah per baris saat render, biar cuma 1 batch).
+  const streaks = await Promise.all(
+    leaderboard.map((row) => getCurrentStreak(row.user.id)),
+  );
+  const leaderboardWithStreak = leaderboard.map((row, i) => ({
+    ...row,
+    streak: streaks[i],
+  }));
+
+  const myRank = leaderboard.findIndex(
+    (row) => row.user.id === session.user.id,
+  );
   const isCurrentUserRanked = myRank !== -1;
 
   return (
@@ -51,21 +67,28 @@ export default async function LeaderboardPage() {
 
       <div className="mx-auto w-full max-w-2xl px-6 py-10">
         <h1 className="text-xl font-medium tracking-tight">Papan peringkat</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Berdasarkan jumlah modul yang diselesaikan</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Berdasarkan jumlah modul yang diselesaikan
+        </p>
 
         {leaderboard.length === 0 ? (
           <div className="mt-8 rounded-xl border p-6 text-center">
-            <Trophy className="mx-auto h-6 w-6 text-muted-foreground" aria-hidden="true" />
+            <Trophy
+              className="mx-auto h-6 w-6 text-muted-foreground"
+              aria-hidden="true"
+            />
             <p className="mt-3 text-sm text-muted-foreground">
               Belum ada yang menyelesaikan modul. Jadilah yang pertama!
             </p>
           </div>
         ) : (
           <div className="mt-6 flex flex-col gap-1.5">
-            {leaderboard.map((row, index) => {
+            {leaderboardWithStreak.map((row, index) => {
               const rank = index + 1;
               const isMe = row.user.id === session.user.id;
-              const initials = (row.user.name ?? row.user.email ?? "?").charAt(0).toUpperCase();
+              const initials = (row.user.name ?? row.user.email ?? "?")
+                .charAt(0)
+                .toUpperCase();
 
               return (
                 <div
@@ -74,17 +97,36 @@ export default async function LeaderboardPage() {
                     isMe ? "border-foreground/20 bg-muted/60" : ""
                   }`}
                 >
-                  <span className={`w-6 text-center text-sm font-medium ${RANK_COLORS[rank] ?? "text-muted-foreground"}`}>
+                  <span
+                    className={`w-6 text-center text-sm font-medium ${RANK_COLORS[rank] ?? "text-muted-foreground"}`}
+                  >
                     {rank}
                   </span>
                   <Avatar className="h-8 w-8">
-                    {row.user.image && <AvatarImage src={row.user.image} alt={row.user.name ?? "Avatar"} />}
+                    {row.user.image && (
+                      <AvatarImage
+                        src={row.user.image}
+                        alt={row.user.name ?? "Avatar"}
+                      />
+                    )}
                     <AvatarFallback>{initials}</AvatarFallback>
                   </Avatar>
                   <span className="flex-1 text-sm">
-                    {isMe ? <span className="font-medium">Kamu</span> : row.user.name}
+                    {isMe ? (
+                      <span className="font-medium">Kamu</span>
+                    ) : (
+                      row.user.name
+                    )}
                   </span>
-                  <span className="text-xs text-muted-foreground">{row.count} modul selesai</span>
+                  {row.streak > 0 && (
+                    <span className="flex items-center gap-1 text-xs text-orange-600">
+                      <Flame className="h-3.5 w-3.5" aria-hidden="true" />
+                      {row.streak}
+                    </span>
+                  )}
+                  <span className="w-24 shrink-0 text-right text-xs text-muted-foreground">
+                    {row.count} modul
+                  </span>
                 </div>
               );
             })}
@@ -93,7 +135,8 @@ export default async function LeaderboardPage() {
 
         {!isCurrentUserRanked && leaderboard.length > 0 && (
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Kamu belum menyelesaikan modul apa pun. Selesaikan modul pertama untuk masuk papan peringkat.
+            Kamu belum menyelesaikan modul apa pun. Selesaikan modul pertama
+            untuk masuk papan peringkat.
           </p>
         )}
       </div>

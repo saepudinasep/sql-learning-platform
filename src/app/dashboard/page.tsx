@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
-import { CheckCircle2, Lock, PlayCircle } from "lucide-react";
+import { CheckCircle2, Flame, Lock, PlayCircle } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getCurrentStreak } from "@/lib/streak";
 import { Badge } from "@/components/ui/badge";
 import { AppHeader } from "@/components/app-header";
 
@@ -11,11 +12,14 @@ export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user) redirect("/login");
 
-  const courses = await prisma.course.findMany({
-    where: { status: "PUBLISHED" },
-    orderBy: { order: "asc" },
-    include: { modules: { orderBy: { order: "asc" } } },
-  });
+  const [courses, streak] = await Promise.all([
+    prisma.course.findMany({
+      where: { status: "PUBLISHED" },
+      orderBy: { order: "asc" },
+      include: { modules: { orderBy: { order: "asc" } } },
+    }),
+    getCurrentStreak(session.user.id),
+  ]);
 
   // Progress dicek sekaligus untuk semua modul di semua course, supaya
   // tidak query berulang per modul (N+1).
@@ -37,9 +41,17 @@ export default async function DashboardPage() {
       />
 
       <div className="mx-auto w-full max-w-4xl px-6 py-10">
-        <h1 className="text-xl font-medium tracking-tight">
-          Halo, {session.user.name?.split(" ")[0]}
-        </h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-medium tracking-tight">
+            Halo, {session.user.name?.split(" ")[0]}
+          </h1>
+          {streak > 0 && (
+            <span className="flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-700">
+              <Flame className="h-3.5 w-3.5" aria-hidden="true" />
+              {streak} hari beruntun
+            </span>
+          )}
+        </div>
         <p className="mt-1 text-sm text-muted-foreground">
           Lanjutkan progres belajarmu.
         </p>
