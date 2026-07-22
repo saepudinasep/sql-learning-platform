@@ -142,7 +142,7 @@ export function LessonWorkspace({
   const [expectedResult, setExpectedResult] = useState<QueryResult>(null);
 
   const [query, setQuery] = useState(
-    "SELECT * FROM sqlite_master WHERE type='table';",
+    "//SELECT * FROM sqlite_master WHERE type='table';",
   );
   const [result, setResult] = useState<QueryResult>(null);
   const [runError, setRunError] = useState<string | null>(null);
