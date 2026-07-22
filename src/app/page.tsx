@@ -123,7 +123,7 @@ export default function LandingPage() {
         <div className="mx-auto grid w-full max-w-6xl items-center gap-12 px-6 py-20 md:grid-cols-2 md:py-28">
           <div>
             <p className="mb-4 font-mono text-xs tracking-wide text-muted-foreground">
-              {"-- belajar_sql.mulai()"}
+              {"belajar_sql.mulai()"}
             </p>
             <h1 className="font-mono text-3xl font-medium leading-tight tracking-tight sm:text-4xl">
               Tulis query.
@@ -263,7 +263,7 @@ export default function LandingPage() {
       <section className="border-b">
         <div className="mx-auto w-full max-w-6xl px-6 py-16">
           <p className="font-mono text-xs tracking-wide text-muted-foreground">
-            {"-- jalur_belajar"}
+            {"jalur_belajar"}
           </p>
           <h2 className="mt-2 text-2xl font-medium tracking-tight">
             Empat tahap, satu arah yang jelas
@@ -330,7 +330,7 @@ export default function LandingPage() {
       <section className="border-b">
         <div className="mx-auto w-full max-w-6xl px-6 py-16">
           <p className="font-mono text-xs tracking-wide text-muted-foreground">
-            {"-- tentang"}
+            {"tentang"}
           </p>
           <h2 className="mt-2 max-w-xl text-2xl font-medium tracking-tight">
             Dibuat untuk yang mau langsung praktik, bukan cuma nonton
@@ -348,7 +348,7 @@ export default function LandingPage() {
       <section id="faq" className="border-b">
         <div className="mx-auto w-full max-w-6xl px-6 py-16">
           <p className="font-mono text-xs tracking-wide text-muted-foreground">
-            {"-- faq"}
+            {"faq"}
           </p>
           <h2 className="mt-2 text-2xl font-medium tracking-tight">
             Pertanyaan yang sering ditanyakan
