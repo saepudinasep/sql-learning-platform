@@ -67,7 +67,7 @@ const LEARNING_PATH = [
 const FAQS = [
   {
     q: "Apakah saya perlu install database untuk belajar di sini?",
-    a: "Tidak. Semua latihan SQL berjalan langsung di browser kamu lewat sql.js (WebAssembly), tidak perlu install PostgreSQL, MySQL, atau aplikasi apa pun.",
+    a: "Tidak. Semua latihan SQL berjalan langsung di browser kamu, tidak perlu install PostgreSQL, MySQL, atau aplikasi apa pun.",
   },
   {
     q: "Apakah semua modul gratis?",
