@@ -1,10 +1,8 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { SqlPlayground } from "./sql-playground";
-
+import { LessonWorkspace } from "./lesson-workspace";
 export default async function LessonPage({
   params,
 }: {
@@ -38,6 +36,8 @@ export default async function LessonPage({
   if (!mod.datasetUrl) notFound();
 
   const question = mod.questions[0];
+  if (!question) notFound();
+
   const nextModule = course.modules[moduleIndex + 1];
   const nextModuleHref =
     nextModule && nextModule.accessLevel === "FREE"
@@ -45,39 +45,19 @@ export default async function LessonPage({
       : null;
 
   return (
-    <div className="mx-auto grid w-full max-w-5xl gap-8 px-6 py-12 md:grid-cols-2">
-      <div>
-        <p className="text-xs text-muted-foreground">
-          {course.title} · Modul {mod.order} dari {course.modules.length}
-        </p>
-        <h1 className="mt-1 text-xl font-medium">{mod.title}</h1>
-
-        {question && (
-          <div className="mt-4 rounded-lg bg-muted p-4 text-sm">
-            <p className="mb-1 font-medium">Cerita</p>
-            <p>{question.instruction}</p>
-          </div>
-        )}
-
-        <Link href="/dashboard" className="mt-6 inline-block text-sm underline">
-          Kembali ke dashboard
-        </Link>
-      </div>
-
-      {question ? (
-        <SqlPlayground
-          datasetUrl={mod.datasetUrl}
-          referenceQuery={question.referenceQuery}
-          matchRowOrder={question.matchRowOrder}
-          matchColumnNames={question.matchColumnNames}
-          moduleId={mod.id}
-          nextModuleHref={nextModuleHref}
-        />
-      ) : (
-        <p className="text-sm text-muted-foreground">
-          Belum ada soal untuk modul ini.
-        </p>
-      )}
-    </div>
+    <LessonWorkspace
+      courseTitle={course.title}
+      moduleTitle={mod.title}
+      moduleOrder={mod.order}
+      totalModules={course.modules.length}
+      story={question.instruction}
+      backHref="/dashboard"
+      datasetUrl={mod.datasetUrl}
+      referenceQuery={question.referenceQuery}
+      matchRowOrder={question.matchRowOrder}
+      matchColumnNames={question.matchColumnNames}
+      moduleId={mod.id}
+      nextModuleHref={nextModuleHref}
+    />
   );
 }
