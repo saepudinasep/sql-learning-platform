@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -35,10 +36,12 @@ export function UserMenu({
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel className="flex flex-col gap-0.5 font-normal">
-          <span className="text-sm font-medium">{name ?? "Tanpa nama"}</span>
-          <span className="text-xs text-muted-foreground">{email}</span>
-        </DropdownMenuLabel>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="flex flex-col gap-0.5 font-normal">
+            <span className="text-sm font-medium">{name ?? "Tanpa nama"}</span>
+            <span className="text-xs text-muted-foreground">{email}</span>
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         {role === "ADMIN" && (
           <DropdownMenuItem render={<Link href="/admin" />}>
@@ -46,7 +49,10 @@ export function UserMenu({
             Panel admin
           </DropdownMenuItem>
         )}
-        <DropdownMenuItem variant="destructive" onClick={() => signOut({ callbackUrl: "/" })}>
+        <DropdownMenuItem
+          variant="destructive"
+          onClick={() => signOut({ callbackUrl: "/" })}
+        >
           <LogOut className="h-4 w-4" aria-hidden="true" />
           Keluar
         </DropdownMenuItem>
