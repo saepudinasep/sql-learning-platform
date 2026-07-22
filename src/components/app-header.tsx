@@ -31,6 +31,9 @@ export function AppHeader({
             <Link href="/my-courses" className="hover:text-foreground">
               Kursus saya
             </Link>
+            <Link href="/certificates" className="hover:text-foreground">
+              Sertifikat
+            </Link>
           </nav>
         </div>
         <UserMenu name={name} email={email} image={image} role={role} />
