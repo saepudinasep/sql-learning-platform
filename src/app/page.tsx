@@ -88,7 +88,7 @@ export default function LandingPage() {
   return (
     <div className="flex flex-1 flex-col">
       {/* ===== Nav ===== */}
-      <header className="border-b">
+      <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
           <Link
             href="/"

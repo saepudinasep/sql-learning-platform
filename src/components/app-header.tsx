@@ -14,7 +14,7 @@ export function AppHeader({
   role?: string;
 }) {
   return (
-    <header className="border-b">
+    <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto flex w-full max-w-4xl items-center justify-between px-6 py-4">
         <div className="flex items-center gap-6">
           <Link
