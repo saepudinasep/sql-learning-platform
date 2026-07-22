@@ -16,13 +16,23 @@ export function AppHeader({
   return (
     <header className="border-b">
       <div className="mx-auto flex w-full max-w-4xl items-center justify-between px-6 py-4">
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-2 font-mono text-sm font-medium"
-        >
-          <Terminal className="h-4 w-4" aria-hidden="true" />
-          belajar_sql
-        </Link>
+        <div className="flex items-center gap-6">
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-2 font-mono text-sm font-medium"
+          >
+            <Terminal className="h-4 w-4" aria-hidden="true" />
+            belajar_sql
+          </Link>
+          <nav className="hidden items-center gap-4 text-sm text-muted-foreground sm:flex">
+            <Link href="/dashboard" className="hover:text-foreground">
+              Dashboard
+            </Link>
+            <Link href="/my-courses" className="hover:text-foreground">
+              Kursus saya
+            </Link>
+          </nav>
+        </div>
         <UserMenu name={name} email={email} image={image} role={role} />
       </div>
     </header>
