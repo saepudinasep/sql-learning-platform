@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { FaInstagram, FaTiktok, FaYoutube } from "react-icons/fa";
 
 const RESULT_ROWS = [
   { nama: "Sari", kota: "Bandung" },
@@ -372,15 +373,52 @@ export default function LandingPage() {
       </section>
 
       {/* ===== Footer ===== */}
-      <footer className="mt-auto">
-        <div className="mx-auto flex w-full max-w-6xl flex-col items-start justify-between gap-4 px-6 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center">
-          <span className="font-mono">belajar_sql</span>
-          <div className="flex gap-5">
+      <footer className="mt-auto border-t">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-8 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
+          <span className="font-mono font-medium">belajar_sql</span>
+
+          <div className="text-center">
+            &copy; 2026 - {new Date().getFullYear()} belajar_sql by Warung
+            Coding TV. All rights reserved.
+          </div>
+
+          <div className="flex items-center gap-5">
             <Link href="/help" className="hover:text-foreground">
               Bantuan
             </Link>
+
             <a href="#faq" className="hover:text-foreground">
               FAQ
+            </a>
+
+            <a
+              href="https://instagram.com/wctv.co.id"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition hover:text-pink-500"
+              aria-label="Instagram"
+            >
+              <FaInstagram size={18} />
+            </a>
+
+            <a
+              href="https://www.tiktok.com/@wctv.co.id"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition hover:text-foreground"
+              aria-label="TikTok"
+            >
+              <FaTiktok size={18} />
+            </a>
+
+            <a
+              href="https://youtube.com/@WarungCodingTV"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition hover:text-red-500"
+              aria-label="YouTube"
+            >
+              <FaYoutube size={20} />
             </a>
           </div>
         </div>
