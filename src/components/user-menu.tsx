@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { signOut } from "next-auth/react";
-import { LogOut, ShieldCheck } from "lucide-react";
+import { LogOut, Settings, ShieldCheck } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -43,6 +43,10 @@ export function UserMenu({
           </DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
+        <DropdownMenuItem render={<Link href="/settings" />}>
+          <Settings className="h-4 w-4" aria-hidden="true" />
+          Pengaturan
+        </DropdownMenuItem>
         {role === "ADMIN" && (
           <DropdownMenuItem render={<Link href="/admin" />}>
             <ShieldCheck className="h-4 w-4" aria-hidden="true" />
