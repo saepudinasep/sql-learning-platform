@@ -15,6 +15,9 @@ await sql`
 
 // datasetUrl menunjuk ke file .db statis di /public/datasets, yang di-load
 // sql.js langsung di browser (bukan lewat Prisma/Neon).
+// Catatan: untuk sekarang SEMUA modul gratis (monetisasi/Pro ditunda ke
+// Fase 6) — urutan tetap dikunci bertahap lewat logic di dashboard/lesson,
+// bukan lewat accessLevel PRO.
 const modules = [
   [
     "mod_1",
@@ -49,8 +52,8 @@ const modules = [
     "4. INNER JOIN",
     "Gabungkan data pesanan dengan data pelanggan.",
     4,
-    "PRO",
-    null,
+    "FREE",
+    "/datasets/mod_4.db",
   ],
 ];
 
@@ -94,6 +97,14 @@ const questions = [
     "Tim HR mau memberi bonus tahunan untuk 2 karyawan dengan gaji tertinggi di perusahaan. Dari tabel karyawan, tampilkan nama dan gaji 2 karyawan dengan gaji tertinggi, diurutkan dari yang tertinggi ke terendah.",
     "SELECT nama, gaji FROM karyawan ORDER BY gaji DESC LIMIT 2;",
     true,
+    true,
+  ],
+  [
+    "q_4",
+    "mod_4",
+    "Bagian gudang mau menyiapkan label pengiriman, tapi data pesanan dan data pelanggan tersimpan di tabel terpisah. Dari tabel pesanan dan pelanggan, tampilkan nama pelanggan beserta produk yang mereka pesan.",
+    "SELECT pelanggan.nama, pesanan.produk FROM pesanan INNER JOIN pelanggan ON pesanan.pelanggan_id = pelanggan.id;",
+    false,
     true,
   ],
 ];

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { LessonWorkspace } from "./lesson-workspace";
+
 export default async function LessonPage({
   params,
 }: {
@@ -34,6 +35,19 @@ export default async function LessonPage({
   // di UI dashboard, supaya tidak bisa diakses langsung lewat URL.
   if (mod.accessLevel === "PRO") redirect("/dashboard");
   if (!mod.datasetUrl) notFound();
+
+  // Buka bertahap: modul kedua dan seterusnya cuma bisa diakses kalau
+  // modul sebelumnya sudah selesai — dicek di server juga, bukan cuma UI,
+  // supaya tidak bisa dilewati dengan langsung ketik URL modul lanjutan.
+  if (moduleIndex > 0) {
+    const prevModule = course.modules[moduleIndex - 1];
+    const prevProgress = await prisma.progress.findUnique({
+      where: {
+        userId_moduleId: { userId: session.user.id, moduleId: prevModule.id },
+      },
+    });
+    if (!prevProgress?.completed) redirect("/dashboard");
+  }
 
   const question = mod.questions[0];
   if (!question) notFound();

@@ -91,16 +91,35 @@ export default async function DashboardPage() {
               </div>
 
               <div className="flex flex-col gap-2">
-                {course.modules.map((mod) => {
+                {course.modules.map((mod, index) => {
                   // Belum ada sistem subscription (ditunda), jadi modul PRO
                   // untuk sekarang selalu dikunci di UI.
-                  const isLocked = mod.accessLevel === "PRO";
+                  const isProLocked = mod.accessLevel === "PRO";
+
+                  // Buka bertahap: modul pertama selalu terbuka (kalau bukan
+                  // PRO), sisanya baru terbuka setelah modul sebelumnya
+                  // ditandai selesai.
+                  const prevModule = course.modules[index - 1];
+                  const prevCompleted =
+                    !prevModule ||
+                    (progressByModuleId.get(prevModule.id)?.completed ?? false);
+                  const isSequenceLocked = index > 0 && !prevCompleted;
+
+                  const isLocked = isProLocked || isSequenceLocked;
                   const isDone =
                     progressByModuleId.get(mod.id)?.completed ?? false;
 
                   const rowClass = `flex items-center gap-3 rounded-xl border p-3.5 text-sm transition-colors ${
                     isLocked ? "opacity-60" : "hover:bg-muted/60"
                   }`;
+
+                  const statusLabel = isProLocked
+                    ? "Perlu Pro"
+                    : isSequenceLocked
+                      ? "Selesaikan modul sebelumnya"
+                      : isDone
+                        ? "Selesai"
+                        : "Lanjutkan";
 
                   const content = (
                     <>
@@ -124,11 +143,7 @@ export default async function DashboardPage() {
                         {mod.order}. {mod.title}
                       </span>
                       <span className="text-xs text-muted-foreground">
-                        {isLocked
-                          ? "Perlu Pro"
-                          : isDone
-                            ? "Selesai"
-                            : "Lanjutkan"}
+                        {statusLabel}
                       </span>
                     </>
                   );
