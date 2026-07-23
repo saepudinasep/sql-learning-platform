@@ -3,6 +3,12 @@ import { prisma } from "@/lib/prisma";
 import { SAFE_MODULE_FIELDS } from "@/lib/module-select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionPanel,
+} from "@/components/ui/accordion";
 import { CourseDialog } from "./course-dialog";
 import { ModuleDialog } from "./module-dialog";
 import { DeleteButton } from "./delete-button";
@@ -41,19 +47,43 @@ export default async function AdminCoursesPage() {
         />
       </div>
 
-      <div className="mt-6 flex flex-col gap-4">
-        {courses.length === 0 && (
-          <p className="text-sm text-muted-foreground">
-            Belum ada course. Buat course baru di atas.
-          </p>
-        )}
+      {courses.length === 0 && (
+        <p className="mt-6 text-sm text-muted-foreground">
+          Belum ada course. Buat course baru di atas.
+        </p>
+      )}
 
+      <Accordion className="mt-6 rounded-xl border bg-background px-4">
         {courses.map((course) => (
-          <div key={course.id} className="rounded-xl border bg-background p-4">
-            <div className="flex items-start justify-between gap-3">
+          <AccordionItem key={course.id} value={course.id}>
+            <AccordionTrigger
+              actions={
+                <div className="flex items-center gap-1">
+                  <CourseDialog
+                    course={course}
+                    trigger={
+                      <button
+                        type="button"
+                        onClick={(e) => e.stopPropagation()}
+                        className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                        aria-label="Edit course"
+                      >
+                        <Pencil className="h-4 w-4" aria-hidden="true" />
+                      </button>
+                    }
+                  />
+                  <span onClick={(e) => e.stopPropagation()}>
+                    <DeleteButton
+                      onDelete={deleteCourse.bind(null, course.id)}
+                      confirmMessage={`Hapus course "${course.title}" beserta semua modul dan soal di dalamnya? Tindakan ini tidak bisa dibatalkan.`}
+                    />
+                  </span>
+                </div>
+              }
+            >
               <div>
                 <div className="flex items-center gap-2">
-                  <p className="font-medium">{course.title}</p>
+                  <span className="font-medium">{course.title}</span>
                   <Badge
                     variant={
                       course.accessLevel === "FREE" ? "secondary" : "outline"
@@ -69,106 +99,90 @@ export default async function AdminCoursesPage() {
                     {course.status === "PUBLISHED" ? "Published" : "Draft"}
                   </Badge>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1 text-xs font-normal text-muted-foreground">
                   {course.modules.length} modul · /course/{course.slug}
                 </p>
               </div>
-              <div className="flex items-center gap-1">
-                <CourseDialog
-                  course={course}
+            </AccordionTrigger>
+
+            <AccordionPanel>
+              <div className="flex flex-col gap-1.5">
+                {course.modules.map((mod, index) => (
+                  <div
+                    key={mod.id}
+                    className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-sm"
+                  >
+                    <div className="flex flex-col">
+                      <form action={moveModule.bind(null, mod.id, "up")}>
+                        <button
+                          type="submit"
+                          disabled={index === 0}
+                          className="text-muted-foreground hover:text-foreground disabled:opacity-30"
+                          aria-label="Pindah ke atas"
+                        >
+                          <ArrowUp className="h-3 w-3" aria-hidden="true" />
+                        </button>
+                      </form>
+                      <form action={moveModule.bind(null, mod.id, "down")}>
+                        <button
+                          type="submit"
+                          disabled={index === course.modules.length - 1}
+                          className="text-muted-foreground hover:text-foreground disabled:opacity-30"
+                          aria-label="Pindah ke bawah"
+                        >
+                          <ArrowDown className="h-3 w-3" aria-hidden="true" />
+                        </button>
+                      </form>
+                    </div>
+
+                    <span className="flex-1">
+                      {mod.order}. {mod.title}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {mod.accessLevel === "FREE" ? "Gratis" : "Pro"} ·{" "}
+                      {mod.status === "PUBLISHED" ? "Published" : "Draft"}
+                      {!mod.datasetUrl && " · tanpa dataset"}
+                      {mod.questions.length === 0 && " · tanpa soal"}
+                    </span>
+                    <ModuleDialog
+                      courseId={course.id}
+                      module={mod}
+                      question={mod.questions[0]}
+                      trigger={
+                        <button
+                          type="button"
+                          className="rounded-md p-1 text-muted-foreground hover:bg-background hover:text-foreground"
+                          aria-label="Edit modul"
+                        >
+                          <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                        </button>
+                      }
+                    />
+                    <DeleteButton
+                      onDelete={deleteModule.bind(null, mod.id)}
+                      confirmMessage={`Hapus modul "${mod.title}"? Progres user untuk modul ini juga ikut terhapus.`}
+                    />
+                  </div>
+                ))}
+
+                <ModuleDialog
+                  courseId={course.id}
                   trigger={
-                    <button
-                      type="button"
-                      className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                      aria-label="Edit course"
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-1 gap-1.5 self-start"
                     >
-                      <Pencil className="h-4 w-4" aria-hidden="true" />
-                    </button>
+                      <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+                      Tambah modul
+                    </Button>
                   }
                 />
-                <DeleteButton
-                  onDelete={deleteCourse.bind(null, course.id)}
-                  confirmMessage={`Hapus course "${course.title}" beserta semua modul dan soal di dalamnya? Tindakan ini tidak bisa dibatalkan.`}
-                />
               </div>
-            </div>
-
-            <div className="mt-3 flex flex-col gap-1.5">
-              {course.modules.map((mod, index) => (
-                <div
-                  key={mod.id}
-                  className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-sm"
-                >
-                  <div className="flex flex-col">
-                    <form action={moveModule.bind(null, mod.id, "up")}>
-                      <button
-                        type="submit"
-                        disabled={index === 0}
-                        className="text-muted-foreground hover:text-foreground disabled:opacity-30"
-                        aria-label="Pindah ke atas"
-                      >
-                        <ArrowUp className="h-3 w-3" aria-hidden="true" />
-                      </button>
-                    </form>
-                    <form action={moveModule.bind(null, mod.id, "down")}>
-                      <button
-                        type="submit"
-                        disabled={index === course.modules.length - 1}
-                        className="text-muted-foreground hover:text-foreground disabled:opacity-30"
-                        aria-label="Pindah ke bawah"
-                      >
-                        <ArrowDown className="h-3 w-3" aria-hidden="true" />
-                      </button>
-                    </form>
-                  </div>
-
-                  <span className="flex-1">
-                    {mod.order}. {mod.title}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {mod.accessLevel === "FREE" ? "Gratis" : "Pro"} ·{" "}
-                    {mod.status === "PUBLISHED" ? "Published" : "Draft"}
-                    {!mod.datasetUrl && " · tanpa dataset"}
-                    {mod.questions.length === 0 && " · tanpa soal"}
-                  </span>
-                  <ModuleDialog
-                    courseId={course.id}
-                    module={mod}
-                    question={mod.questions[0]}
-                    trigger={
-                      <button
-                        type="button"
-                        className="rounded-md p-1 text-muted-foreground hover:bg-background hover:text-foreground"
-                        aria-label="Edit modul"
-                      >
-                        <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-                      </button>
-                    }
-                  />
-                  <DeleteButton
-                    onDelete={deleteModule.bind(null, mod.id)}
-                    confirmMessage={`Hapus modul "${mod.title}"? Progres user untuk modul ini juga ikut terhapus.`}
-                  />
-                </div>
-              ))}
-
-              <ModuleDialog
-                courseId={course.id}
-                trigger={
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-1 gap-1.5 self-start"
-                  >
-                    <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-                    Tambah modul
-                  </Button>
-                }
-              />
-            </div>
-          </div>
+            </AccordionPanel>
+          </AccordionItem>
         ))}
-      </div>
+      </Accordion>
     </div>
   );
 }
