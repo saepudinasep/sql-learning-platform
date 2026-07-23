@@ -141,9 +141,7 @@ export function LessonWorkspace({
   const [schema, setSchema] = useState<TableSchema[]>([]);
   const [expectedResult, setExpectedResult] = useState<QueryResult>(null);
 
-  const [query, setQuery] = useState(
-    "//SELECT * FROM sqlite_master WHERE type='table';",
-  );
+  const [query, setQuery] = useState("SELECT ... FROM ...;");
   const [result, setResult] = useState<QueryResult>(null);
   const [runError, setRunError] = useState<string | null>(null);
   const [status, setStatus] = useState<
