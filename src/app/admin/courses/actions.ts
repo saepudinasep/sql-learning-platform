@@ -103,14 +103,16 @@ async function upsertQuestionForModule(moduleId: string, formData: FormData) {
   }
 }
 
-async function readDatasetFile(formData: FormData): Promise<Uint8Array | null> {
+async function readDatasetFile(formData: FormData): Promise<Uint8Array<ArrayBuffer> | null> {
   const file = formData.get("dataset");
   if (!(file instanceof File) || file.size === 0) return null;
   const arrayBuffer = await file.arrayBuffer();
-  // Prisma 7 mengharapkan Uint8Array<ArrayBuffer> untuk kolom Bytes.
-  // Buffer.from() ditolak TypeScript karena tipe Buffer<ArrayBufferLike>
-  // mengizinkan SharedArrayBuffer, yang tidak cocok dengan ArrayBuffer biasa.
-  return new Uint8Array(arrayBuffer);
+  // Prisma 7 mengharapkan Uint8Array<ArrayBuffer> untuk kolom Bytes, tapi
+  // File.arrayBuffer() di-infer TypeScript sebagai ArrayBufferLike (bisa
+  // termasuk SharedArrayBuffer secara tipe, walau runtime-nya tidak pernah
+  // begitu untuk upload file browser). Assertion di sini aman karena kita
+  // tahu pasti isinya ArrayBuffer biasa.
+  return new Uint8Array(arrayBuffer) as unknown as Uint8Array<ArrayBuffer>;
 }
 
 export async function createModule(courseId: string, formData: FormData): Promise<ActionResult> {
