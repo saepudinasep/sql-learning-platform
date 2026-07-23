@@ -64,7 +64,6 @@ export default async function AdminCoursesPage() {
                     trigger={
                       <button
                         type="button"
-                        onClick={(e) => e.stopPropagation()}
                         className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                         aria-label="Edit course"
                       >
@@ -72,12 +71,10 @@ export default async function AdminCoursesPage() {
                       </button>
                     }
                   />
-                  <span onClick={(e) => e.stopPropagation()}>
-                    <DeleteButton
-                      onDelete={deleteCourse.bind(null, course.id)}
-                      confirmMessage={`Hapus course "${course.title}" beserta semua modul dan soal di dalamnya? Tindakan ini tidak bisa dibatalkan.`}
-                    />
-                  </span>
+                  <DeleteButton
+                    onDelete={deleteCourse.bind(null, course.id)}
+                    confirmMessage={`Hapus course "${course.title}" beserta semua modul dan soal di dalamnya? Tindakan ini tidak bisa dibatalkan.`}
+                  />
                 </div>
               }
             >
