@@ -141,7 +141,11 @@ model Module {
   order       Int
   accessLevel AccessLevel   @default(FREE)
   status      ContentStatus @default(DRAFT)
-  datasetUrl  String?
+  datasetUrl  String?       // path statis (/datasets/x.db) ATAU route dinamis
+                             // (/api/modules/{id}/dataset) kalau datasetData terisi
+  datasetData Bytes?        // isi file .db kalau diupload lewat admin panel —
+                             // disimpan langsung di Postgres (dataset kecil, ~KB),
+                             // tidak perlu layanan blob storage terpisah
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 

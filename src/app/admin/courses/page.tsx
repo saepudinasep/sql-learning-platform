@@ -10,7 +10,12 @@ import { deleteCourse, deleteModule, moveModule } from "./actions";
 export default async function AdminCoursesPage() {
   const courses = await prisma.course.findMany({
     orderBy: { order: "asc" },
-    include: { modules: { orderBy: { order: "asc" } } },
+    include: {
+      modules: {
+        orderBy: { order: "asc" },
+        include: { questions: { orderBy: { order: "asc" }, take: 1 } },
+      },
+    },
   });
 
   return (
@@ -34,7 +39,9 @@ export default async function AdminCoursesPage() {
 
       <div className="mt-6 flex flex-col gap-4">
         {courses.length === 0 && (
-          <p className="text-sm text-muted-foreground">Belum ada course. Buat course baru di atas.</p>
+          <p className="text-sm text-muted-foreground">
+            Belum ada course. Buat course baru di atas.
+          </p>
         )}
 
         {courses.map((course) => (
@@ -43,10 +50,18 @@ export default async function AdminCoursesPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <p className="font-medium">{course.title}</p>
-                  <Badge variant={course.accessLevel === "FREE" ? "secondary" : "outline"}>
+                  <Badge
+                    variant={
+                      course.accessLevel === "FREE" ? "secondary" : "outline"
+                    }
+                  >
                     {course.accessLevel === "FREE" ? "Gratis" : "Pro"}
                   </Badge>
-                  <Badge variant={course.status === "PUBLISHED" ? "default" : "outline"}>
+                  <Badge
+                    variant={
+                      course.status === "PUBLISHED" ? "default" : "outline"
+                    }
+                  >
                     {course.status === "PUBLISHED" ? "Published" : "Draft"}
                   </Badge>
                 </div>
@@ -109,10 +124,13 @@ export default async function AdminCoursesPage() {
                   <span className="text-xs text-muted-foreground">
                     {mod.accessLevel === "FREE" ? "Gratis" : "Pro"} ·{" "}
                     {mod.status === "PUBLISHED" ? "Published" : "Draft"}
+                    {!mod.datasetUrl && " · tanpa dataset"}
+                    {mod.questions.length === 0 && " · tanpa soal"}
                   </span>
                   <ModuleDialog
                     courseId={course.id}
                     module={mod}
+                    question={mod.questions[0]}
                     trigger={
                       <button
                         type="button"
@@ -133,7 +151,11 @@ export default async function AdminCoursesPage() {
               <ModuleDialog
                 courseId={course.id}
                 trigger={
-                  <Button variant="outline" size="sm" className="mt-1 gap-1.5 self-start">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-1 gap-1.5 self-start"
+                  >
                     <Plus className="h-3.5 w-3.5" aria-hidden="true" />
                     Tambah modul
                   </Button>

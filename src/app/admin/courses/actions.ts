@@ -70,8 +70,44 @@ function readModuleInput(formData: FormData) {
     content: String(formData.get("content") ?? "").trim(),
     accessLevel: (String(formData.get("accessLevel") ?? "FREE") as "FREE" | "PRO"),
     status: (String(formData.get("status") ?? "DRAFT") as "DRAFT" | "PUBLISHED"),
-    datasetUrl: String(formData.get("datasetUrl") ?? "").trim() || null,
   };
+}
+
+function readQuestionInput(formData: FormData) {
+  const instruction = String(formData.get("instruction") ?? "").trim();
+  const referenceQuery = String(formData.get("referenceQuery") ?? "").trim();
+  const matchRowOrder = formData.get("matchRowOrder") === "on";
+  const matchColumnNames = formData.get("matchColumnNames") === "on";
+  return { instruction, referenceQuery, matchRowOrder, matchColumnNames };
+}
+
+/**
+ * Upsert soal untuk sebuah modul. Desain aplikasi ini cuma pakai 1 soal per
+ * modul (lihat lesson-workspace.tsx yang selalu ambil questions[0]), jadi
+ * "upsert" di sini artinya: update soal pertama kalau sudah ada, atau buat
+ * baru kalau modul belum punya soal sama sekali.
+ */
+async function upsertQuestionForModule(moduleId: string, formData: FormData) {
+  const input = readQuestionInput(formData);
+  if (!input.instruction || !input.referenceQuery) {
+    // Soal opsional saat modul pertama kali dibuat (boleh diisi belakangan),
+    // jadi kalau kosong, jangan buat baris Question kosong.
+    return;
+  }
+
+  const existing = await prisma.question.findFirst({ where: { moduleId }, orderBy: { order: "asc" } });
+  if (existing) {
+    await prisma.question.update({ where: { id: existing.id }, data: input });
+  } else {
+    await prisma.question.create({ data: { ...input, moduleId, order: 1 } });
+  }
+}
+
+async function readDatasetFile(formData: FormData): Promise<Buffer | null> {
+  const file = formData.get("dataset");
+  if (!(file instanceof File) || file.size === 0) return null;
+  const arrayBuffer = await file.arrayBuffer();
+  return Buffer.from(arrayBuffer);
 }
 
 export async function createModule(courseId: string, formData: FormData): Promise<ActionResult> {
@@ -84,9 +120,21 @@ export async function createModule(courseId: string, formData: FormData): Promis
   if (existing) return { ok: false, error: `Slug "${slug}" sudah dipakai modul lain di course ini.` };
 
   const moduleCount = await prisma.module.count({ where: { courseId } });
-  await prisma.module.create({
+  const created = await prisma.module.create({
     data: { ...input, courseId, slug, order: moduleCount + 1 },
   });
+
+  // File baru diketahui ukurannya setelah module dibuat (butuh id untuk
+  // membentuk URL /api/modules/{id}/dataset), jadi di-update terpisah.
+  const datasetBuffer = await readDatasetFile(formData);
+  if (datasetBuffer) {
+    await prisma.module.update({
+      where: { id: created.id },
+      data: { datasetData: datasetBuffer, datasetUrl: `/api/modules/${created.id}/dataset` },
+    });
+  }
+
+  await upsertQuestionForModule(created.id, formData);
 
   revalidatePath("/admin/courses");
   return { ok: true };
@@ -108,7 +156,20 @@ export async function updateModule(moduleId: string, formData: FormData): Promis
     return { ok: false, error: `Slug "${slug}" sudah dipakai modul lain di course ini.` };
   }
 
-  await prisma.module.update({ where: { id: moduleId }, data: { ...input, slug } });
+  // Kalau tidak ada file baru diupload, datasetUrl/datasetData lama
+  // dibiarkan apa adanya (termasuk kalau sebelumnya diisi manual lewat
+  // seed script — tidak ikut terhapus cuma karena admin edit judul modul).
+  const datasetBuffer = await readDatasetFile(formData);
+  const datasetFields = datasetBuffer
+    ? { datasetData: datasetBuffer, datasetUrl: `/api/modules/${moduleId}/dataset` }
+    : {};
+
+  await prisma.module.update({
+    where: { id: moduleId },
+    data: { ...input, slug, ...datasetFields },
+  });
+
+  await upsertQuestionForModule(moduleId, formData);
 
   revalidatePath("/admin/courses");
   return { ok: true };
