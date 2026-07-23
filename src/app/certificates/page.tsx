@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { Award, Download, Lock, Share2 } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { SAFE_MODULE_FIELDS } from "@/lib/module-select";
 import { AppHeader } from "@/components/app-header";
 import { Button, buttonVariants } from "@/components/ui/button";
 
@@ -13,7 +14,7 @@ export default async function CertificatesPage() {
   const courses = await prisma.course.findMany({
     where: { status: "PUBLISHED" },
     orderBy: { order: "asc" },
-    include: { modules: true },
+    include: { modules: { select: SAFE_MODULE_FIELDS } },
   });
 
   const moduleIds = courses.flatMap((c) => c.modules.map((m) => m.id));

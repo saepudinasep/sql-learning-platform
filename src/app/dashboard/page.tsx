@@ -5,6 +5,7 @@ import { CheckCircle2, Flame, Lock, PlayCircle } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getCurrentStreak } from "@/lib/streak";
+import { SAFE_MODULE_FIELDS } from "@/lib/module-select";
 import { Badge } from "@/components/ui/badge";
 import { AppHeader } from "@/components/app-header";
 
@@ -16,7 +17,9 @@ export default async function DashboardPage() {
     prisma.course.findMany({
       where: { status: "PUBLISHED" },
       orderBy: { order: "asc" },
-      include: { modules: { orderBy: { order: "asc" } } },
+      include: {
+        modules: { orderBy: { order: "asc" }, select: SAFE_MODULE_FIELDS },
+      },
     }),
     getCurrentStreak(session.user.id),
   ]);

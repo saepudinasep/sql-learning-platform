@@ -1,5 +1,6 @@
 import { ArrowDown, ArrowUp, Pencil, Plus } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { SAFE_MODULE_FIELDS } from "@/lib/module-select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CourseDialog } from "./course-dialog";
@@ -13,7 +14,10 @@ export default async function AdminCoursesPage() {
     include: {
       modules: {
         orderBy: { order: "asc" },
-        include: { questions: { orderBy: { order: "asc" }, take: 1 } },
+        select: {
+          ...SAFE_MODULE_FIELDS,
+          questions: { orderBy: { order: "asc" }, take: 1 },
+        },
       },
     },
   });

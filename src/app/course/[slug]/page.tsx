@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Lock, LockOpen } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { SAFE_MODULE_FIELDS } from "@/lib/module-select";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 
@@ -28,7 +29,9 @@ export default async function CourseDetailPage({
 
   const course = await prisma.course.findUnique({
     where: { slug, status: "PUBLISHED" },
-    include: { modules: { orderBy: { order: "asc" } } },
+    include: {
+      modules: { orderBy: { order: "asc" }, select: SAFE_MODULE_FIELDS },
+    },
   });
 
   if (!course) notFound();
@@ -95,9 +98,9 @@ export default async function CourseDetailPage({
           >
             Mulai gratis
           </Link>
-          {/* <p className="mt-2 text-center text-xs text-muted-foreground">
+          <p className="mt-2 text-center text-xs text-muted-foreground">
             Tanpa kartu kredit
-          </p> */}
+          </p>
         </div>
       </div>
     </div>

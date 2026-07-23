@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { SAFE_MODULE_FIELDS } from "@/lib/module-select";
 import { LessonWorkspace } from "./lesson-workspace";
 
 export default async function LessonPage({
@@ -19,7 +20,10 @@ export default async function LessonPage({
     include: {
       modules: {
         orderBy: { order: "asc" },
-        include: { questions: { orderBy: { order: "asc" } } },
+        select: {
+          ...SAFE_MODULE_FIELDS,
+          questions: { orderBy: { order: "asc" } },
+        },
       },
     },
   });
