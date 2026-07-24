@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { SAFE_MODULE_FIELDS } from "@/lib/module-select";
+import { getLockedCourseIds } from "@/lib/course-progress";
 import { LessonWorkspace } from "./lesson-workspace";
 
 export default async function LessonPage({
@@ -40,17 +41,36 @@ export default async function LessonPage({
   if (mod.accessLevel === "PRO") redirect("/dashboard");
   if (!mod.datasetUrl) notFound();
 
-  // Buka bertahap: modul kedua dan seterusnya cuma bisa diakses kalau
-  // modul sebelumnya sudah selesai — dicek di server juga, bukan cuma UI,
-  // supaya tidak bisa dilewati dengan langsung ketik URL modul lanjutan.
+  // Buka bertahap di level course: cek dulu apakah course ini sendiri
+  // masih terkunci karena course sebelumnya belum selesai — dicek di
+  // server, bukan cuma UI, supaya tidak bisa dilewati dengan langsung
+  // ketik URL modul di course yang belum kebuka.
+  const allCourses = await prisma.course.findMany({
+    where: { status: "PUBLISHED" },
+    orderBy: { order: "asc" },
+    select: { id: true, modules: { select: SAFE_MODULE_FIELDS } },
+  });
+  const allModuleIds = allCourses.flatMap((c) => c.modules.map((m) => m.id));
+  const allProgress = allModuleIds.length
+    ? await prisma.progress.findMany({
+        where: {
+          userId: session.user.id,
+          moduleId: { in: allModuleIds },
+          completed: true,
+        },
+      })
+    : [];
+  const completedModuleIds = new Set(allProgress.map((p) => p.moduleId));
+  const lockedCourseIds = getLockedCourseIds(allCourses, (moduleId) =>
+    completedModuleIds.has(moduleId),
+  );
+  if (lockedCourseIds.has(course.id)) redirect("/dashboard");
+
+  // Buka bertahap di level modul: modul kedua dan seterusnya cuma bisa
+  // diakses kalau modul sebelumnya sudah selesai.
   if (moduleIndex > 0) {
     const prevModule = course.modules[moduleIndex - 1];
-    const prevProgress = await prisma.progress.findUnique({
-      where: {
-        userId_moduleId: { userId: session.user.id, moduleId: prevModule.id },
-      },
-    });
-    if (!prevProgress?.completed) redirect("/dashboard");
+    if (!completedModuleIds.has(prevModule.id)) redirect("/dashboard");
   }
 
   const question = mod.questions[0];
