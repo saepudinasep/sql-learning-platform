@@ -12,7 +12,7 @@ import {
 import { CourseDialog } from "./course-dialog";
 import { ModuleDialog } from "./module-dialog";
 import { DeleteButton } from "./delete-button";
-import { deleteCourse, deleteModule, moveModule } from "./actions";
+import { deleteCourse, deleteModule, moveModule, moveCourse } from "./actions";
 
 export default async function AdminCoursesPage() {
   const courses = await prisma.course.findMany({
@@ -54,11 +54,33 @@ export default async function AdminCoursesPage() {
       )}
 
       <Accordion className="mt-6 rounded-xl border bg-background px-4">
-        {courses.map((course) => (
+        {courses.map((course, courseIndex) => (
           <AccordionItem key={course.id} value={course.id}>
             <AccordionTrigger
               actions={
                 <div className="flex items-center gap-1">
+                  <div className="flex flex-col">
+                    <form action={moveCourse.bind(null, course.id, "up")}>
+                      <button
+                        type="submit"
+                        disabled={courseIndex === 0}
+                        className="text-muted-foreground hover:text-foreground disabled:opacity-30"
+                        aria-label="Pindah course ke atas"
+                      >
+                        <ArrowUp className="h-3 w-3" aria-hidden="true" />
+                      </button>
+                    </form>
+                    <form action={moveCourse.bind(null, course.id, "down")}>
+                      <button
+                        type="submit"
+                        disabled={courseIndex === courses.length - 1}
+                        className="text-muted-foreground hover:text-foreground disabled:opacity-30"
+                        aria-label="Pindah course ke bawah"
+                      >
+                        <ArrowDown className="h-3 w-3" aria-hidden="true" />
+                      </button>
+                    </form>
+                  </div>
                   <CourseDialog
                     course={course}
                     trigger={

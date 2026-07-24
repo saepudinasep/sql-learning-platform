@@ -207,3 +207,24 @@ export async function moveModule(moduleId: string, direction: "up" | "down"): Pr
 
   revalidatePath("/admin/courses");
 }
+
+export async function moveCourse(courseId: string, direction: "up" | "down"): Promise<void> {
+  await requireAdmin();
+  const course = await prisma.course.findUnique({ where: { id: courseId } });
+  if (!course) return;
+
+  const swapWith = await prisma.course.findFirst({
+    where: {
+      order: direction === "up" ? { lt: course.order } : { gt: course.order },
+    },
+    orderBy: { order: direction === "up" ? "desc" : "asc" },
+  });
+  if (!swapWith) return;
+
+  await prisma.$transaction([
+    prisma.course.update({ where: { id: course.id }, data: { order: swapWith.order } }),
+    prisma.course.update({ where: { id: swapWith.id }, data: { order: course.order } }),
+  ]);
+
+  revalidatePath("/admin/courses");
+}
