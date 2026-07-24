@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FaInstagram, FaTiktok, FaYoutube } from "react-icons/fa";
+import { MobileNav } from "./mobile-nav";
 
 const RESULT_ROWS = [
   { nama: "Sari", kota: "Bandung" },
@@ -68,7 +68,7 @@ const LEARNING_PATH = [
 const FAQS = [
   {
     q: "Apakah saya perlu install database untuk belajar di sini?",
-    a: "Tidak. Semua latihan SQL berjalan langsung di browser kamu, tidak perlu install PostgreSQL, MySQL, atau aplikasi apa pun.",
+    a: "Tidak. Semua latihan SQL berjalan langsung di browser kamu lewat sql.js (WebAssembly), tidak perlu install PostgreSQL, MySQL, atau aplikasi apa pun.",
   },
   {
     q: "Apakah semua modul gratis?",
@@ -88,7 +88,7 @@ export default function LandingPage() {
   return (
     <div className="flex flex-1 flex-col">
       {/* ===== Nav ===== */}
-      <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-md">
+      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
           <Link
             href="/"
@@ -105,7 +105,7 @@ export default function LandingPage() {
               FAQ
             </a>
           </nav>
-          <div className="flex items-center gap-2">
+          <div className="hidden items-center gap-2 sm:flex">
             <Link
               href="/login"
               className={buttonVariants({ variant: "ghost", size: "sm" })}
@@ -116,6 +116,7 @@ export default function LandingPage() {
               Mulai gratis
             </Link>
           </div>
+          <MobileNav />
         </div>
       </header>
 
@@ -124,7 +125,7 @@ export default function LandingPage() {
         <div className="mx-auto grid w-full max-w-6xl items-center gap-12 px-6 py-20 md:grid-cols-2 md:py-28">
           <div>
             <p className="mb-4 font-mono text-xs tracking-wide text-muted-foreground">
-              {"belajar_sql.mulai()"}
+              {"-- belajar_sql.mulai()"}
             </p>
             <h1 className="font-mono text-3xl font-medium leading-tight tracking-tight sm:text-4xl">
               Tulis query.
@@ -264,7 +265,7 @@ export default function LandingPage() {
       <section className="border-b">
         <div className="mx-auto w-full max-w-6xl px-6 py-16">
           <p className="font-mono text-xs tracking-wide text-muted-foreground">
-            {"jalur_belajar"}
+            {"-- jalur_belajar"}
           </p>
           <h2 className="mt-2 text-2xl font-medium tracking-tight">
             Empat tahap, satu arah yang jelas
@@ -331,7 +332,7 @@ export default function LandingPage() {
       <section className="border-b">
         <div className="mx-auto w-full max-w-6xl px-6 py-16">
           <p className="font-mono text-xs tracking-wide text-muted-foreground">
-            {"tentang"}
+            {"-- tentang"}
           </p>
           <h2 className="mt-2 max-w-xl text-2xl font-medium tracking-tight">
             Dibuat untuk yang mau langsung praktik, bukan cuma nonton
@@ -349,7 +350,7 @@ export default function LandingPage() {
       <section id="faq" className="border-b">
         <div className="mx-auto w-full max-w-6xl px-6 py-16">
           <p className="font-mono text-xs tracking-wide text-muted-foreground">
-            {"faq"}
+            {"-- faq"}
           </p>
           <h2 className="mt-2 text-2xl font-medium tracking-tight">
             Pertanyaan yang sering ditanyakan
@@ -373,52 +374,15 @@ export default function LandingPage() {
       </section>
 
       {/* ===== Footer ===== */}
-      <footer className="mt-auto border-t">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-8 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
-          <span className="font-mono font-medium">belajar_sql</span>
-
-          <div className="text-center">
-            &copy; 2026 - {new Date().getFullYear()} belajar_sql by Warung
-            Coding TV. All rights reserved.
-          </div>
-
-          <div className="flex items-center gap-5">
+      <footer className="mt-auto">
+        <div className="mx-auto flex w-full max-w-6xl flex-col items-start justify-between gap-4 px-6 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center">
+          <span className="font-mono">belajar_sql</span>
+          <div className="flex gap-5">
             <Link href="/help" className="hover:text-foreground">
               Bantuan
             </Link>
-
             <a href="#faq" className="hover:text-foreground">
               FAQ
-            </a>
-
-            <a
-              href="https://instagram.com/wctv.co.id"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="transition hover:text-pink-500"
-              aria-label="Instagram"
-            >
-              <FaInstagram size={18} />
-            </a>
-
-            <a
-              href="https://www.tiktok.com/@wctv.co.id"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="transition hover:text-foreground"
-              aria-label="TikTok"
-            >
-              <FaTiktok size={18} />
-            </a>
-
-            <a
-              href="https://youtube.com/@WarungCodingTV"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="transition hover:text-red-500"
-              aria-label="YouTube"
-            >
-              <FaYoutube size={20} />
             </a>
           </div>
         </div>
