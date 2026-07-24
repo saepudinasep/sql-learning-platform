@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
+import { FlaskConical, Loader2 } from "lucide-react";
 import { createModule, updateModule } from "./actions";
+import { getSqlJs } from "@/lib/sqljs-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -30,6 +32,9 @@ type QuestionInput = {
   matchColumnNames: boolean;
 };
 
+type TestResult = { columns: string[]; values: unknown[][] };
+type TestStatus = "idle" | "loading" | "success" | "error";
+
 export function ModuleDialog({
   trigger,
   courseId,
@@ -45,6 +50,14 @@ export function ModuleDialog({
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [referenceQuery, setReferenceQuery] = useState(
+    question?.referenceQuery ?? "",
+  );
+  const [testStatus, setTestStatus] = useState<TestStatus>("idle");
+  const [testResult, setTestResult] = useState<TestResult | null>(null);
+  const [testError, setTestError] = useState<string | null>(null);
+
   function handleSubmit(formData: FormData) {
     startTransition(async () => {
       setError(null);
@@ -57,6 +70,52 @@ export function ModuleDialog({
         setError(result.error ?? "Gagal menyimpan.");
       }
     });
+  }
+
+  async function testReferenceQuery() {
+    setTestStatus("loading");
+    setTestError(null);
+    setTestResult(null);
+
+    try {
+      if (!referenceQuery.trim()) {
+        throw new Error("Tulis query jawaban acuan dulu sebelum diuji.");
+      }
+
+      const selectedFile = fileInputRef.current?.files?.[0];
+      let bytes: ArrayBuffer;
+
+      if (selectedFile && selectedFile.size > 0) {
+        // Dataset baru yang belum disimpan — dites langsung dari file yang
+        // dipilih di file input, tanpa perlu klik "Simpan" dulu.
+        bytes = await selectedFile.arrayBuffer();
+      } else if (mod?.datasetUrl) {
+        // Belum pilih file baru, pakai dataset yang sudah tersimpan.
+        const res = await fetch(mod.datasetUrl);
+        if (!res.ok) throw new Error("Gagal memuat dataset yang tersimpan.");
+        bytes = await res.arrayBuffer();
+      } else {
+        throw new Error(
+          "Belum ada dataset. Upload file .db dulu di atas sebelum menguji.",
+        );
+      }
+
+      const SQL = await getSqlJs();
+      const db = new SQL.Database(new Uint8Array(bytes));
+      try {
+        const result = db.exec(referenceQuery)[0] ?? {
+          columns: [],
+          values: [],
+        };
+        setTestResult(result);
+        setTestStatus("success");
+      } finally {
+        db.close();
+      }
+    } catch (e) {
+      setTestError(e instanceof Error ? e.message : "Query gagal dijalankan.");
+      setTestStatus("error");
+    }
   }
 
   return (
@@ -129,9 +188,16 @@ export function ModuleDialog({
               Dataset (.db)
             </label>
             <input
+              ref={fileInputRef}
               type="file"
               name="dataset"
               accept=".db"
+              onChange={() => {
+                // Dataset ganti, hasil uji coba lama jadi tidak relevan lagi.
+                setTestStatus("idle");
+                setTestResult(null);
+                setTestError(null);
+              }}
               className="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-md file:border file:bg-background file:px-2.5 file:py-1 file:text-xs file:font-medium"
             />
             <p className="mt-1.5 text-xs text-muted-foreground">
@@ -163,13 +229,19 @@ export function ModuleDialog({
               </label>
               <textarea
                 name="referenceQuery"
-                defaultValue={question?.referenceQuery}
+                value={referenceQuery}
+                onChange={(e) => {
+                  setReferenceQuery(e.target.value);
+                  setTestStatus("idle");
+                  setTestResult(null);
+                  setTestError(null);
+                }}
                 rows={3}
                 placeholder="SELECT ... FROM ..."
                 className="flex w-full rounded-md border bg-transparent px-3 py-2 font-mono text-sm shadow-xs outline-none placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring"
               />
             </div>
-            <div className="flex gap-4 text-xs text-muted-foreground">
+            <div className="mb-3 flex gap-4 text-xs text-muted-foreground">
               <label className="flex items-center gap-1.5">
                 <input
                   type="checkbox"
@@ -189,10 +261,73 @@ export function ModuleDialog({
                 Cocokkan nama kolom
               </label>
             </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={testReferenceQuery}
+              disabled={testStatus === "loading"}
+              className="gap-1.5"
+            >
+              {testStatus === "loading" ? (
+                <Loader2
+                  className="h-3.5 w-3.5 animate-spin"
+                  aria-hidden="true"
+                />
+              ) : (
+                <FlaskConical className="h-3.5 w-3.5" aria-hidden="true" />
+              )}
+              {testStatus === "loading"
+                ? "Menjalankan..."
+                : "Uji coba jawaban acuan"}
+            </Button>
+
+            {testStatus === "error" && testError && (
+              <p className="mt-2 text-xs text-destructive">{testError}</p>
+            )}
+
+            {testStatus === "success" && testResult && (
+              <div className="mt-2">
+                <p className="mb-1 text-xs text-green-700">
+                  Query berhasil, {testResult.values.length} baris dikembalikan.
+                </p>
+                {testResult.columns.length > 0 && (
+                  <div className="max-h-40 overflow-auto rounded-md border">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b bg-muted/50">
+                          {testResult.columns.map((c) => (
+                            <th
+                              key={c}
+                              className="px-2 py-1 text-left font-medium"
+                            >
+                              {c}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {testResult.values.slice(0, 20).map((row, i) => (
+                          <tr key={i} className="border-b last:border-0">
+                            {row.map((v, j) => (
+                              <td key={j} className="px-2 py-1 font-mono">
+                                {String(v)}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
             <p className="mt-2 text-xs text-muted-foreground">
               Query ini dijalankan langsung ke dataset saat user klik &quot;Cek
-              jawaban&quot; di playground — pastikan sudah diuji manual sebelum
-              publish modul.
+              jawaban&quot; di playground — pastikan sudah diuji di sini dulu
+              sebelum publish modul.
             </p>
           </div>
 
